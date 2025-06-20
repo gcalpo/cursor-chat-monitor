@@ -1,0 +1,16 @@
+# Cursor Conversation Watcher - Requirements
+# Task 1.1: Electron App Investigation
+
+# Core process inspection
+psutil>=6.0.0
+
+# macOS Accessibility APIs (macOS only)
+pyobjc-framework-Cocoa>=10.0; sys_platform == "darwin"
+pyobjc-framework-ApplicationServices>=10.0; sys_platform == "darwin"
+
+# Optional: Enhanced debugging capabilities
+requests>=2.31.0
+
+# Development and testing
+pytest>=7.0.0
+pytest-cov>=4.0.0 
