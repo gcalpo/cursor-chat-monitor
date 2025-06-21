@@ -1,16 +1,25 @@
-# Cursor Conversation Watcher - Requirements
-# Task 1.1: Electron App Investigation
+# Cursor Conversation Watcher - Cross-Platform Requirements
 
-# Core process inspection
+# Core dependencies (all platforms)
 psutil>=6.0.0
 
-# macOS Accessibility APIs (macOS only)
+# macOS-specific dependencies
 pyobjc-framework-Cocoa>=10.0; sys_platform == "darwin"
 pyobjc-framework-ApplicationServices>=10.0; sys_platform == "darwin"
 
-# Optional: Enhanced debugging capabilities
+# Windows-specific dependencies
+pywin32>=306; sys_platform == "win32"
+pyttsx3>=2.90; sys_platform == "win32"
+
+# Linux-specific dependencies
+pyatspi>=2.0.1; sys_platform == "linux"
+
+# Optional: Enhanced debugging capabilities (all platforms)
 requests>=2.31.0
 
 # Development and testing
 pytest>=7.0.0
-pytest-cov>=4.0.0 
+pytest-cov>=4.0.0
+
+# Cross-platform notification support (optional)
+# plyer>=2.1.0  # Uncomment if you want unified notifications 
