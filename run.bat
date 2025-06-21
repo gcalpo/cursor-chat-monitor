@@ -16,7 +16,17 @@ REM Check if Python 3 is available
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo ❌ Python is not installed or not in PATH
-    echo Please install Python 3 and try again
+    echo.
+    echo 📋 To install Python 3 for Windows:
+    echo    1. Visit https://www.python.org/downloads/
+    echo    2. Download the latest Python 3 version
+    echo    3. Run the installer and CHECK "Add Python to PATH"
+    echo    4. Restart your computer if needed
+    echo.
+    echo 📖 For detailed installation instructions, see:
+    echo    docs/platforms/windows.md#python-3-installation-guide
+    echo.
+    echo 🔄 After installing Python, run this script again.
     pause
     exit /b 1
 )

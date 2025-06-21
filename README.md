@@ -22,9 +22,54 @@ A mature, production-ready cross-platform tool for monitoring Cursor IDE convers
 
 ## 🚀 Quick Start
 
-### Simple Run Scripts (Development/Source Mode)
+### Option 1: Precompiled Binaries (Recommended)
 
-For the easiest experience, use one of the provided run scripts that handle all virtual environment setup automatically:
+**For most users, we recommend using the precompiled standalone executables that require no Python installation:**
+
+#### Download and Install
+
+1. **Choose your platform** and download the appropriate precompiled binary:
+   - **[📱 macOS Binary](docs/platforms/macos.md#option-1-standalone-executable-recommended)** - Universal binary (Intel + Apple Silicon)
+   - **[🪟 Windows Binary](docs/platforms/windows.md#option-1-standalone-executable-recommended)** - Windows 10+ compatible
+   - **[🐧 Linux Binary](docs/platforms/linux.md#option-1-standalone-executable-recommended)** - Most distributions supported
+
+2. **Install and run** using platform-specific instructions in the guides above
+
+#### Quick Usage Examples
+
+```bash
+# macOS/Linux
+cursor-chat-monitor --help           # Show help
+cursor-chat-monitor --debug          # Run with debug output
+cursor-chat-monitor --interval-ms=2000  # Custom scan interval
+
+# Windows
+cursor-chat-monitor.exe --help       # Show help
+cursor-chat-monitor.exe --debug      # Run with debug output
+cursor-chat-monitor.exe --interval-ms=2000  # Custom scan interval
+```
+
+#### Service Management
+
+Each platform provides native service integration:
+
+- **macOS**: LaunchAgent with `cursor-chat-monitor-service start/stop/status`
+- **Windows**: Windows Service with Service Control Manager integration
+- **Linux**: systemd with `systemctl --user start/stop cursor-chat-monitor`
+
+**💡 Benefits of precompiled binaries:**
+- ✅ **No Python installation required**
+- ✅ **Native service integration** for each platform
+- ✅ **One-click installation** with automated setup
+- ✅ **Production-ready** with proper permissions and configurations
+
+### Option 2: Run from Source (Development)
+
+**For developers or users who prefer to run from source code:**
+
+#### Simple Run Scripts
+
+Use one of the provided run scripts that handle all virtual environment setup automatically:
 
 ```bash
 # Cross-platform Python script (recommended)
@@ -42,15 +87,7 @@ python3 run.py --debug --interval-ms=2000
 run.bat --config=my_config.json
 ```
 
-### Choose Your Platform
-
-Select your operating system for detailed setup instructions:
-
-- **[📱 macOS Setup Guide](docs/platforms/macos.md)** - Complete macOS installation and configuration
-- **[🪟 Windows Setup Guide](docs/platforms/windows.md)** - Windows installation and service setup
-- **[🐧 Linux Setup Guide](docs/platforms/linux.md)** - Linux distribution-specific instructions
-
-### Manual Usage (Advanced)
+#### Manual Usage (Advanced)
 
 ```bash
 # Check platform support
@@ -66,15 +103,15 @@ python3 cursor_chat_monitor.py --daemon
 python3 cursor_chat_monitor.py --config=my_config.json --debug
 ```
 
-### Service Management
+**💡 For Windows Users:** If you don't have Python installed, the [Windows Guide](docs/platforms/windows.md) includes comprehensive Python 3 installation instructions with troubleshooting steps.
 
-Each platform provides native service integration:
+### Choose Your Platform
 
-- **macOS**: LaunchAgent with `cursor-chat-monitor-service start/stop/status`
-- **Windows**: Windows Service with Service Control Manager integration
-- **Linux**: systemd with `systemctl --user start/stop cursor-chat-monitor`
+Select your operating system for detailed setup instructions:
 
-See platform-specific guides for detailed service management instructions.
+- **[📱 macOS Setup Guide](docs/platforms/macos.md)** - Complete macOS installation and configuration
+- **[🪟 Windows Setup Guide](docs/platforms/windows.md)** - Windows installation, Python setup, and service configuration
+- **[🐧 Linux Setup Guide](docs/platforms/linux.md)** - Linux distribution-specific instructions
 
 ## 📚 Documentation
 
@@ -144,19 +181,31 @@ See the [Configuration Guide](docs/CONFIGURATION.md) for complete details.
 
 ## 🔧 Installation Options
 
-### Standalone Executables (Recommended)
+### Precompiled Binaries (Primary Recommendation)
 
-- **No Python required** on target systems
-- **Native service integration** for each platform
-- **One-click installation** with automated setup
+**For most users, precompiled standalone executables provide the best experience:**
 
-### Source Installation
+- **🚀 Zero setup required** - No Python installation needed on target systems
+- **🔧 Native service integration** - Platform-specific service management for each OS
+- **⚡ One-click installation** - Automated setup with proper permissions and configurations
+- **🛡️ Production-ready** - Tested and optimized for each platform
+- **📦 Self-contained** - All dependencies bundled (~50MB per platform)
 
-- **Development flexibility** with full source access
-- **Custom modifications** and debugging capabilities
-- **Cross-platform Python environment**
+**Download and installation guides:**
+- **[macOS Binary Installation](docs/platforms/macos.md#option-1-standalone-executable-recommended)**
+- **[Windows Binary Installation](docs/platforms/windows.md#option-1-standalone-executable-recommended)**
+- **[Linux Binary Installation](docs/platforms/linux.md#option-1-standalone-executable-recommended)**
 
-See the [Installation Guide](docs/INSTALLATION.md) for detailed instructions.
+### Source Installation (Developer Option)
+
+**For developers, contributors, or users who need custom modifications:**
+
+- **🔧 Development flexibility** - Full source access and debugging capabilities
+- **⚙️ Custom modifications** - Ability to modify and extend functionality
+- **🐍 Cross-platform Python environment** - Standard Python development workflow
+- **📚 Learning opportunity** - Understand the codebase and architecture
+
+**See the [Build Guide](docs/BUILD.md) for creating your own precompiled binaries.**
 
 ## 🚨 Need Help?
 

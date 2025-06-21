@@ -5,8 +5,159 @@ Complete guide for installing and running Cursor Chat Monitor on Windows.
 ## 📋 System Requirements
 
 - **Windows 10 or later (64-bit recommended)**
+- **Python 3.8 or later** (see installation instructions below)
 - **Cursor IDE installed and running**
 - **PowerShell or Command Prompt access**
+
+## 🐍 Python 3 Installation Guide
+
+### **Step 1: Check if Python is Already Installed**
+
+First, check if Python is already installed on your system:
+
+```cmd
+python --version
+```
+
+If you see a version number (e.g., "Python 3.11.0"), Python is already installed. If you get an error like "'python' is not recognized", you need to install Python.
+
+**Alternative check:**
+```cmd
+python3 --version
+py --version
+```
+
+### **Step 2: Download Python 3**
+
+1. **Visit the official Python website:** https://www.python.org/downloads/
+2. **Click the big yellow "Download Python" button** (it will automatically select the latest version for Windows)
+3. **Or choose a specific version:** Click "All releases" and select Python 3.8 or later
+
+### **Step 3: Install Python 3**
+
+**Important Installation Steps:**
+
+1. **Run the downloaded installer** (e.g., `python-3.11.0-amd64.exe`)
+2. **⚠️ CRITICAL: Check "Add Python to PATH"** - This box must be checked!
+3. **Choose "Install Now"** (recommended) or "Customize installation"
+4. **Wait for installation to complete**
+
+**Visual Guide:**
+```
+┌─────────────────────────────────────┐
+│ Python 3.11.0 (64-bit)              │
+├─────────────────────────────────────┤
+│ ☑️ Add Python 3.11 to PATH          │ ← MUST CHECK THIS!
+│ ☑️ Install for all users            │
+├─────────────────────────────────────┤
+│ [Install Now] [Customize] [Cancel]  │
+└─────────────────────────────────────┘
+```
+
+### **Step 4: Verify Installation**
+
+Open a **new** Command Prompt or PowerShell window and run:
+
+```cmd
+python --version
+pip --version
+```
+
+You should see output like:
+```
+Python 3.11.0
+pip 23.1.2 from C:\Users\YourName\AppData\Local\Programs\Python\Python311\Lib\site-packages\pip (python 3.11)
+```
+
+### **Step 5: Alternative Installation Methods**
+
+#### **Using Microsoft Store (Easiest)**
+
+1. Open Microsoft Store
+2. Search for "Python 3.11" or "Python 3.12"
+3. Click "Get" or "Install"
+4. Python will be automatically added to PATH
+
+#### **Using Chocolatey (Advanced Users)**
+
+If you have Chocolatey package manager installed:
+
+```cmd
+choco install python
+```
+
+#### **Using Winget (Windows 10/11)**
+
+```cmd
+winget install Python.Python.3.11
+```
+
+### **Step 6: Troubleshooting Python Installation**
+
+#### **"python is not recognized" Error**
+
+If you get this error after installation:
+
+1. **Restart your computer** (sometimes required for PATH changes)
+2. **Check if Python is in PATH:**
+   ```cmd
+   echo %PATH%
+   ```
+   Look for entries like `C:\Users\YourName\AppData\Local\Programs\Python\Python311\` or `C:\Python311\`
+
+3. **Manually add Python to PATH:**
+   - Press `Win + R`, type `sysdm.cpl`, press Enter
+   - Click "Environment Variables"
+   - Under "System Variables", find "Path" and click "Edit"
+   - Click "New" and add your Python installation path
+   - Typical paths: `C:\Python311\` or `C:\Users\YourName\AppData\Local\Programs\Python\Python311\`
+
+#### **Multiple Python Versions**
+
+If you have multiple Python versions:
+
+```cmd
+REM List all Python installations
+py --list
+
+REM Use specific version
+py -3.11 --version
+py -3.12 --version
+
+REM Set default version
+py -0
+```
+
+#### **Permission Issues**
+
+If you get permission errors:
+
+1. **Run Command Prompt as Administrator:**
+   - Right-click Command Prompt
+   - Select "Run as administrator"
+
+2. **Or use user installation:**
+   ```cmd
+   python -m pip install --user package_name
+   ```
+
+### **Step 7: Install Required Windows Packages**
+
+After Python is installed, install Windows-specific packages:
+
+```cmd
+pip install pywin32 pyttsx3
+```
+
+### **Step 8: Test Python Installation**
+
+Run this test to ensure everything works:
+
+```cmd
+python -c "import sys; print(f'Python {sys.version}'); import win32api; print('Windows API: OK'); import pyttsx3; print('Text-to-Speech: OK')"
+```
+
+You should see output confirming Python version and successful imports.
 
 ## 🚀 Quick Installation
 
