@@ -55,11 +55,19 @@ Platform Support:
   Windows:  Uses Win32 APIs and pyttsx3
   Linux:    Uses AT-SPI and espeak/festival
 
+Voice Configuration:
+  --voices                    List all available voices for current platform (default highlighted)
+  --voice-info               Show detailed platform voice information
+  --test-voice [VOICE_NAME]   Test voice configuration
+
 Examples:
   python3 cursor_chat_monitor.py
   python3 cursor_chat_monitor.py --interval-ms=2000 --debug
   python3 cursor_chat_monitor.py --config=my_config.json
   python3 cursor_chat_monitor.py --daemon
+  python3 cursor_chat_monitor.py --voices
+  python3 cursor_chat_monitor.py --voice-info
+  python3 cursor_chat_monitor.py --test-voice "Microsoft David Desktop"
         """
     )
     
@@ -93,6 +101,23 @@ Examples:
         type=str,
         help="Path to PID file for daemon mode (default: ~/.cursor-chat-monitor.pid)"
     )
+    parser.add_argument(
+        "--voices",
+        action="store_true",
+        help="List all available voices for current platform (default highlighted) and exit"
+    )
+    parser.add_argument(
+        "--voice-info",
+        action="store_true",
+        help="Show detailed platform voice information and exit"
+    )
+    parser.add_argument(
+        "--test-voice",
+        nargs='?',
+        const='',
+        metavar='VOICE_NAME',
+        help="Test voice configuration (optional: specify voice name)"
+    )
     
     args = parser.parse_args()
     
@@ -110,6 +135,67 @@ Examples:
             print(f"🔊 Alert system: {alert_system.get_platform_name()}")
         except Exception as e:
             print(f"❌ Platform implementation error: {e}")
+        
+        return 0
+    
+    # Handle voice-related commands
+    if args.voices:
+        from core.config import list_available_voices, get_platform_name
+        print(f"🎤 Voice Configuration for {get_platform_name().upper()}")
+        print("=" * 50)
+        list_available_voices()
+        print("\n💡 Use --test-voice to test a specific voice")
+        print("💡 Use --voice-info for detailed platform information")
+        return 0
+    
+    if args.voice_info:
+        from core.config import show_platform_voice_info
+        show_platform_voice_info()
+        return 0
+    
+    if args.test_voice is not None:
+        from core.config import get_platform_name, PLATFORM_VOICE_CONFIGS
+        platform = get_platform_name()
+        voice_config = PLATFORM_VOICE_CONFIGS.get(platform, {})
+        
+        # Use provided voice or default
+        voice_name = args.test_voice if args.test_voice else voice_config.get("default_voice", "Unknown")
+        speech_rate = voice_config.get("default_speech_rate", 175)
+        
+        test_message = "This is a test of the voice configuration for cursor chat monitor."
+        print(f"🎤 Testing voice: {voice_name} at {speech_rate} WPM")
+        print(f"   Message: '{test_message}'")
+        
+        try:
+            if platform == "windows":
+                import pyttsx3
+                engine = pyttsx3.init()
+                engine.setProperty('voice', voice_name)
+                engine.setProperty('rate', speech_rate)
+                engine.say(test_message)
+                engine.runAndWait()
+            elif platform == "macos":
+                import subprocess
+                subprocess.run([
+                    'say', 
+                    '-v', voice_name,
+                    '-r', str(speech_rate),
+                    test_message
+                ], check=True)
+            elif platform == "linux":
+                import subprocess
+                # Convert WPM to espeak rate (approximate)
+                espeak_rate = int(speech_rate * 1.2)
+                subprocess.run([
+                    'espeak',
+                    '-s', str(espeak_rate),
+                    test_message
+                ], check=True)
+            
+            print("✅ Voice test completed successfully")
+        except Exception as e:
+            print(f"❌ Voice test failed: {e}")
+            print("💡 Try running: python scripts/voice_config.py system")
         
         return 0
     

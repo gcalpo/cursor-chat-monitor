@@ -3,6 +3,27 @@ Windows-specific implementation using Win32 APIs and UI Automation
 """
 import sys
 import logging
+import os
+
+# Configure logging BEFORE importing uiautomation
+logging.getLogger('uiautomation').setLevel(logging.CRITICAL)
+logging.getLogger('comtypes').setLevel(logging.CRITICAL)
+
+# Temporarily suppress stdout/stderr during uiautomation import
+class SuppressOutput:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
+
 from typing import List, Dict, Any
 from .base import AppAccessor, WindowElement, AlertSystem, PlatformConfig
 
@@ -12,13 +33,22 @@ try:
     import win32con
     import win32process
     import pyttsx3
+    import psutil
+    
+    # Import uiautomation with suppressed output
+    with SuppressOutput():
+        import uiautomation as auto
+    
+    # Disable verbose UI Automation logging
+    auto.OPERATION_WAIT_TIME = 0
+    
     WIN32_AVAILABLE = True
 except ImportError:
     WIN32_AVAILABLE = False
 
 
 class WindowsWindowElement(WindowElement):
-    """Windows-specific window element using Win32 APIs"""
+    """Windows-specific window element using Win32 APIs and UI Automation"""
     
     def __init__(self, window_id: str, title: str, hwnd):
         super().__init__(window_id, title)
@@ -26,31 +56,76 @@ class WindowsWindowElement(WindowElement):
         self.logger = logging.getLogger(__name__)
     
     def get_text_content(self, max_depth: int = 30) -> List[str]:
-        """Extract all text content from this Windows window element"""
+        """Extract all text content from this Windows window element using both Win32 and UI Automation"""
         texts = []
+        visited = set()
+
+        # Method 1: Win32 API extraction (for traditional controls)
+        def extract_text_recursive(hwnd, current_depth):
+            if current_depth > max_depth or hwnd in visited:
+                return
+            visited.add(hwnd)
+            try:
+                window_text = win32gui.GetWindowText(hwnd)
+                if window_text:
+                    texts.append(window_text)
+            except Exception as e:
+                pass
+            # Recurse into child windows
+            try:
+                def enum_child_proc(child_hwnd, _):
+                    extract_text_recursive(child_hwnd, current_depth + 1)
+                    return True
+                win32gui.EnumChildWindows(hwnd, enum_child_proc, None)
+            except Exception as e:
+                pass
+
+        try:
+            extract_text_recursive(self.hwnd, 0)
+        except Exception as e:
+            self.logger.debug(f"Error in Win32 text extraction: {e}")
+
+        # Method 2: UI Automation extraction (for web elements and modern controls)
+        try:
+            uia_element = auto.ControlFromHandle(self.hwnd)
+            if uia_element:
+                self._extract_uia_text(uia_element, texts, 0, max_depth)
+        except Exception as e:
+            self.logger.debug(f"Error in UI Automation text extraction: {e}")
+
+        return texts
+    
+    def _extract_uia_text(self, element, texts, current_depth, max_depth):
+        """Recursively extract text from UI Automation elements"""
+        if current_depth > max_depth:
+            return
         
         try:
-            # Get window text
-            window_text = win32gui.GetWindowText(self.hwnd)
-            if window_text:
-                texts.append(window_text)
-            
-            # Enumerate child windows to get more text
-            def enum_child_proc(hwnd, texts):
+            # Get various text properties - expanded list
+            for prop_name in ['Name', 'AutomationId', 'ClassName', 'HelpText', 'LocalizedControlType', 'ControlType']:
                 try:
-                    child_text = win32gui.GetWindowText(hwnd)
-                    if child_text and len(child_text) > 2:
-                        texts.append(child_text)
+                    value = getattr(element, prop_name, None)
+                    if value and isinstance(value, str) and value.strip():
+                        texts.append(value.strip())
                 except:
                     pass
-                return True
-            
-            win32gui.EnumChildWindows(self.hwnd, enum_child_proc, texts)
-            
+            # Also try to get the element's text content directly
+            try:
+                if hasattr(element, 'GetText'):
+                    text_content = element.GetText()
+                    if text_content and isinstance(text_content, str) and text_content.strip():
+                        texts.append(text_content.strip())
+            except:
+                pass
+            # Get children and recurse
+            try:
+                children = element.GetChildren()
+                for child in children:
+                    self._extract_uia_text(child, texts, current_depth + 1, max_depth)
+            except:
+                pass
         except Exception as e:
-            self.logger.debug(f"Error extracting text from Windows window: {e}")
-        
-        return texts
+            self.logger.debug(f"Error extracting UIA text at depth {current_depth}: {e}")
 
 
 class WindowsAppAccessor(AppAccessor):
@@ -82,10 +157,15 @@ class WindowsAppAccessor(AppAccessor):
                 if win32gui.IsWindowVisible(hwnd):
                     window_text = win32gui.GetWindowText(hwnd)
                     if window_text and app_name.lower() in window_text.lower():
-                        # Get process info to ensure it's the main process
                         try:
                             _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                            windows.append((hwnd, window_text, pid))
+                            # Check process name using psutil
+                            try:
+                                proc = psutil.Process(pid)
+                                if proc.name().lower() == "cursor.exe":
+                                    windows.append((hwnd, window_text, pid))
+                            except Exception as e:
+                                pass  # Could not get process name, skip
                         except:
                             pass
                 return True

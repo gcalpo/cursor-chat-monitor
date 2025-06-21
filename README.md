@@ -156,13 +156,13 @@ cursor-chat-monitor/
 
 ## ⚙️ Configuration
 
-The monitor supports comprehensive JSON configuration with intelligent priority:
+The monitor supports comprehensive JSON configuration with intelligent priority and **platform-specific defaults**:
 
 1. `--config=path/to/config.json` (command line argument)
 2. `~/.cursor_chat_monitor` (user home directory)
-3. Built-in defaults
+3. Built-in platform-specific defaults
 
-**Example configuration:**
+**Unified Configuration (Works on all platforms):**
 
 ```json
 {
@@ -172,12 +172,28 @@ The monitor supports comprehensive JSON configuration with intelligent priority:
   ],
   "GENERATING_TEXTS": ["generating"],
   "DEFAULT_SCAN_INTERVAL_MS": 1500,
-  "VOICE_NAME": "Daniel",
-  "SPEECH_RATE": 175
+  "VOICE_NAME": "PLATFORM_DEFAULT",
+  "SPEECH_RATE": "PLATFORM_DEFAULT"
 }
 ```
 
-See the [Configuration Guide](docs/CONFIGURATION.md) for complete details.
+**Platform Defaults Applied:**
+- **Windows**: `"Microsoft David Desktop"` voice at `175` WPM
+- **macOS**: `"Daniel"` voice at `175` WPM  
+- **Linux**: `"default"` voice at `175` WPM
+
+**Custom Configuration:**
+
+```json
+{
+  "VOICE_NAME": "Microsoft Zira Desktop",  // Override platform default
+  "SPEECH_RATE": 200,                      // Override platform default
+  "DEFAULT_SCAN_INTERVAL_MS": 1000,
+  "MAX_SEARCH_DEPTH": 25
+}
+```
+
+See the [Configuration Guide](docs/CONFIGURATION.md) for complete details and platform-specific options.
 
 ## 🔧 Installation Options
 

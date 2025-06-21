@@ -117,35 +117,66 @@ New-Item -Path "$env:USERPROFILE\.cursor_chat_monitor" -ItemType File
 #### `VOICE_NAME`
 
 - **Type**: String
-- **Default**: `"Daniel"` (macOS), `"Microsoft David Desktop"` (Windows), `"en+f3"` (Linux)
+- **Default**: Platform-specific (see below)
 - **Description**: Voice to use for text-to-speech announcements
-- **Platform Examples**:
+- **Special Value**: `"PLATFORM_DEFAULT"` - Automatically uses platform-specific default voice
+- **Platform Defaults**:
+  - **Windows**: `"Microsoft David Desktop"` (Male)
+  - **macOS**: `"Daniel"` (British male)
+  - **Linux**: `"default"` (System default)
 
-  ```json
-  // macOS
-  "VOICE_NAME": "Daniel"        // British male
-  "VOICE_NAME": "Alex"          // Default male
-  "VOICE_NAME": "Victoria"      // Female
+**Configuration Examples**:
 
-  // Windows
-  "VOICE_NAME": "Microsoft David Desktop"   // Male
-  "VOICE_NAME": "Microsoft Zira Desktop"    // Female
+```json
+// Use platform-specific default (recommended)
+"VOICE_NAME": "PLATFORM_DEFAULT"
 
-  // Linux (espeak)
-  "VOICE_NAME": "en+f3"         // Female English
-  "VOICE_NAME": "en+m3"         // Male English
-  ```
+// Override with specific voice
+"VOICE_NAME": "Microsoft Zira Desktop"    // Windows
+"VOICE_NAME": "Victoria"                  // macOS
+"VOICE_NAME": "en+f3"                     // Linux
+```
+
+**Platform Voice Options**:
+
+```json
+// macOS
+"VOICE_NAME": "Daniel"        // British male
+"VOICE_NAME": "Alex"          // Default male
+"VOICE_NAME": "Victoria"      // Female
+
+// Windows
+"VOICE_NAME": "Microsoft David Desktop"   // Male
+"VOICE_NAME": "Microsoft Zira Desktop"    // Female
+
+// Linux (espeak)
+"VOICE_NAME": "en+f3"         // Female English
+"VOICE_NAME": "en+m3"         // Male English
+```
 
 #### `SPEECH_RATE`
 
-- **Type**: Integer (words per minute)
-- **Default**: `175`
+- **Type**: Integer (words per minute) or String
+- **Default**: Platform-specific (see below)
 - **Range**: `50` - `300`
 - **Description**: Speed of text-to-speech announcements
+- **Special Value**: `"PLATFORM_DEFAULT"` - Automatically uses platform-specific default rate
+- **Platform Defaults**:
+  - **All Platforms**: `175` WPM
 - **Platform Notes**:
   - macOS: Uses `say` command rate parameter
   - Windows: Uses pyttsx3 rate setting
   - Linux: Uses espeak speed parameter
+
+**Configuration Examples**:
+
+```json
+// Use platform-specific default (recommended)
+"SPEECH_RATE": "PLATFORM_DEFAULT"
+
+// Override with specific rate
+"SPEECH_RATE": 200
+```
 
 #### `WINDOW_TITLE_ANNOUNCE_MODE`
 
@@ -210,12 +241,47 @@ New-Item -Path "$env:USERPROFILE\.cursor_chat_monitor" -ItemType File
 
 ## 🎯 Platform-Specific Configuration
 
-### macOS Configuration
+### Unified Configuration (Recommended)
+
+The configuration system now supports platform-specific defaults using `"PLATFORM_DEFAULT"` placeholders. This allows one configuration file to work across all platforms:
 
 ```json
 {
-  "VOICE_NAME": "Daniel",
-  "SPEECH_RATE": 175,
+  "_comment": "Unified configuration that works on all platforms",
+  "_comment2": "Voice settings automatically use platform-specific defaults",
+  "AWAITING_USER_ACTION_TEXTS": [
+    "resume the conversation",
+    "Connection failed",
+    "trouble connecting to the model provider",
+    "File is being edited by another chat"
+  ],
+  "GENERATING_TEXTS": ["generating"],
+  "DEFAULT_SCAN_INTERVAL_MS": 1500,
+  "MAX_SEARCH_DEPTH": 30,
+  "VOICE_NAME": "PLATFORM_DEFAULT",
+  "SPEECH_RATE": "PLATFORM_DEFAULT",
+  "WINDOW_TITLE_ANNOUNCE_MODE": "last",
+  "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
+  "ANNOUNCE_GENERATING_STARTED": true,
+  "GENERATING_STARTED_DEBOUNCE_SECONDS": 10
+}
+```
+
+**Platform Defaults Applied:**
+- **Windows**: `"Microsoft David Desktop"` voice at `175` WPM
+- **macOS**: `"Daniel"` voice at `175` WPM  
+- **Linux**: `"default"` voice at `175` WPM
+
+### Platform-Specific Overrides
+
+You can still override the platform defaults with specific values:
+
+#### macOS Configuration
+
+```json
+{
+  "VOICE_NAME": "Victoria",
+  "SPEECH_RATE": 200,
   "WINDOW_TITLE_ANNOUNCE_MODE": "last",
   "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
   "DEFAULT_SCAN_INTERVAL_MS": 1500,
@@ -236,11 +302,11 @@ say -v Victoria "Test message"   # Female
 say -v Fiona "Test message"      # Scottish female
 ```
 
-### Windows Configuration
+#### Windows Configuration
 
 ```json
 {
-  "VOICE_NAME": "Microsoft David Desktop",
+  "VOICE_NAME": "Microsoft Zira Desktop",
   "SPEECH_RATE": 180,
   "WINDOW_TITLE_ANNOUNCE_MODE": "last",
   "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
@@ -262,7 +328,7 @@ REM "Microsoft Mark Desktop" (Male)
 REM "Microsoft Hazel Desktop" (Female)
 ```
 
-### Linux Configuration
+#### Linux Configuration
 
 ```json
 {
@@ -271,8 +337,7 @@ REM "Microsoft Hazel Desktop" (Female)
   "WINDOW_TITLE_ANNOUNCE_MODE": "last",
   "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
   "DEFAULT_SCAN_INTERVAL_MS": 1800,
-  "MAX_SEARCH_DEPTH": 35,
-  "TTS_ENGINE": "espeak"
+  "MAX_SEARCH_DEPTH": 35
 }
 ```
 

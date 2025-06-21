@@ -1,19 +1,7 @@
 {
-    "_comment": "macOS-specific configuration template for Cursor Chat Monitor",
+    "_comment": "Windows-specific configuration template for Cursor Chat Monitor",
     "_comment2": "Voice settings use PLATFORM_DEFAULT placeholders that are automatically replaced",
-    "_comment3": "macOS default: Daniel voice at 175 WPM",
-    "scan_interval_ms": 2000,
-    "output_directory": "~/cursor-chat-logs",
-    "debug_mode": false,
-    "app_names": ["Cursor"],
-    "notification_enabled": true,
-    "platform_specific": {
-        "macos": {
-            "use_accessibility_api": true,
-            "monitor_window_focus": true,
-            "bundle_identifiers": ["com.todesktop.230313mzl4w4u92"]
-        }
-    },
+    "_comment3": "Windows default: Microsoft David Desktop voice at 175 WPM",
     "AWAITING_USER_ACTION_TEXTS": [
         "resume the conversation",
         "Connection failed",
@@ -25,7 +13,7 @@
     ],
     "DEFAULT_SCAN_INTERVAL_MS": 1500,
     "MAX_SEARCH_DEPTH": 30,
-    "_comment_voice": "Voice settings will be automatically set to macOS defaults",
+    "_comment_voice": "Voice settings will be automatically set to Windows defaults",
     "_comment_voice2": "You can override these by setting explicit values below",
     "VOICE_NAME": "PLATFORM_DEFAULT",
     "SPEECH_RATE": "PLATFORM_DEFAULT",
@@ -37,9 +25,9 @@
     "LOG_TO_FILE": false,
     "DEFAULT_DEBUG_MODE": false,
     "PLATFORM_VOICE_CONFIG": {
-        "default_voice": "Daniel",
+        "default_voice": "Microsoft David Desktop",
         "default_speech_rate": 175,
         "speech_rate_range": [100, 300],
         "speech_rate_presets": [150, 175, 200, 225, 250]
     }
-}
+} 
