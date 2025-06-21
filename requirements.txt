@@ -21,5 +21,8 @@ requests>=2.31.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
 
+# Build tools
+pyinstaller>=6.0.0  # For creating standalone executables
+
 # Cross-platform notification support (optional)
 # plyer>=2.1.0  # Uncomment if you want unified notifications 

@@ -1,0 +1,14 @@
+{
+    "scan_interval_ms": 2000,
+    "output_directory": "~/cursor-chat-logs",
+    "debug_mode": false,
+    "app_names": ["Cursor"],
+    "notification_enabled": true,
+    "platform_specific": {
+        "macos": {
+            "use_accessibility_api": true,
+            "monitor_window_focus": true,
+            "bundle_identifiers": ["com.todesktop.230313mzl4w4u92"]
+        }
+    }
+}

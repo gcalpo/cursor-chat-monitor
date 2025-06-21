@@ -4,6 +4,7 @@ Cross-platform monitoring logic for cursor chat monitor
 import time
 import logging
 import sys
+import os
 from datetime import datetime
 from typing import Dict, List, Any
 from platforms import get_platform_implementations, get_current_platform
@@ -13,11 +14,13 @@ from platforms.base import AppAccessor, AlertSystem, WindowElement
 class CrossPlatformMonitor:
     """Cross-platform monitor for cursor chat text detection"""
     
-    def __init__(self, config: Dict[str, Any], interval_ms: int = None, debug: bool = None):
+    def __init__(self, config: Dict[str, Any], interval_ms: int = None, debug: bool = None, daemon_mode: bool = False):
         self.config = config
         self.interval_ms = interval_ms if interval_ms is not None else config.get("DEFAULT_SCAN_INTERVAL_MS", 1500)
         self.debug = debug if debug is not None else config.get("DEFAULT_DEBUG_MODE", False)
+        self.daemon_mode = daemon_mode
         self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.running = True  # Control flag for monitoring loop
         
         # Get platform-specific implementations
         try:
@@ -39,10 +42,18 @@ class CrossPlatformMonitor:
         
         # Set up logging
         log_level = logging.DEBUG if self.debug else logging.INFO
-        handlers = [logging.StreamHandler(sys.stdout)]
-        if config.get("LOG_TO_FILE", False):
+        handlers = []
+        
+        # In daemon mode, don't log to stdout unless debug is on
+        if not daemon_mode or self.debug:
+            handlers.append(logging.StreamHandler(sys.stdout))
+        
+        if config.get("LOG_TO_FILE", False) or daemon_mode:
             log_file = config.get("MONITOR_LOG_FILE", "cursor_resume_monitor.log")
-            handlers.insert(0, logging.FileHandler(log_file))
+            # If daemon mode and no explicit log file path, use home directory
+            if daemon_mode and not os.path.isabs(log_file):
+                log_file = os.path.expanduser(f"~/.{log_file}")
+            handlers.append(logging.FileHandler(log_file))
         
         logging.basicConfig(
             level=log_level,
@@ -54,6 +65,11 @@ class CrossPlatformMonitor:
     def check_prerequisites(self) -> bool:
         """Check if platform prerequisites are met"""
         return self.app_accessor.check_prerequisites()
+    
+    def stop_monitoring(self) -> None:
+        """Stop the monitoring loop gracefully"""
+        self.running = False
+        self.logger.info("Monitor stop requested")
     
     def count_texts_in_window(self, window: WindowElement, target_texts: List[str]) -> Dict[str, int]:
         """Count occurrences of target texts in a window"""
@@ -146,24 +162,30 @@ class CrossPlatformMonitor:
     def run_monitoring(self) -> None:
         """Run the main cross-platform monitoring loop"""
         platform_name = get_current_platform()
-        print(f"🔍 Starting Cursor Multi-Text Monitor")
-        print(f"🖥️  Platform: {platform_name}")
-        print(f"📊 Session ID: {self.session_id}")
-        print(f"🎯 Target texts: {self.awaiting_user_action_texts}")
-        print(f"🎯 Generating texts: {self.generating_texts}")
-        print(f"⏱️  Scan interval: {self.interval_ms} ms")
-        print(f"🔊 Audio alerts: {self.alert_system.get_platform_name()}")
         
-        if self.debug:
-            print(f"🐛 Debug mode: ON (will show extracted text)")
+        # Only print startup info if not in daemon mode
+        if not self.daemon_mode:
+            print(f"🔍 Starting Cursor Multi-Text Monitor")
+            print(f"🖥️  Platform: {platform_name}")
+            print(f"📊 Session ID: {self.session_id}")
+            print(f"🎯 Target texts: {self.awaiting_user_action_texts}")
+            print(f"🎯 Generating texts: {self.generating_texts}")
+            print(f"⏱️  Scan interval: {self.interval_ms} ms")
+            print(f"🔊 Audio alerts: {self.alert_system.get_platform_name()}")
+            
+            if self.debug:
+                print(f"🐛 Debug mode: ON (will show extracted text)")
+            
+            print(f"🚀 Press Ctrl+C to stop")
+            print("=" * 60)
         
-        print(f"🚀 Press Ctrl+C to stop")
-        print("=" * 60)
+        # Log startup in daemon mode
+        self.logger.info(f"Starting Cursor Multi-Text Monitor (Platform: {platform_name}, Session: {self.session_id})")
         
         scan_count = 0
         
         try:
-            while True:
+            while self.running:
                 scan_count += 1
                 
                 # Find target app

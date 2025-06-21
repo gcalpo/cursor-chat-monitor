@@ -16,13 +16,34 @@ Config file priority:
 
 import sys
 import argparse
+import signal
+import os
 from core.config import load_config, DEFAULT_CONFIG, validate_config
 from core.monitor import CrossPlatformMonitor
 from platforms import get_current_platform
 
+# Global monitor instance for signal handling
+monitor_instance = None
+
+def signal_handler(signum, frame):
+    """Handle termination signals gracefully"""
+    global monitor_instance
+    print(f"\n🛑 Received signal {signum}, shutting down gracefully...")
+    if monitor_instance:
+        monitor_instance.stop_monitoring()
+    sys.exit(0)
+
+def setup_signal_handlers():
+    """Set up signal handlers for graceful shutdown"""
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    if hasattr(signal, 'SIGHUP'):
+        signal.signal(signal.SIGHUP, signal_handler)
 
 def main():
     """Main entry point for the cursor chat monitor"""
+    global monitor_instance
+    
     parser = argparse.ArgumentParser(
         description="Monitor Cursor IDE for multiple target texts (Cross-Platform)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -38,6 +59,7 @@ Examples:
   python3 cursor_chat_monitor.py
   python3 cursor_chat_monitor.py --interval-ms=2000 --debug
   python3 cursor_chat_monitor.py --config=my_config.json
+  python3 cursor_chat_monitor.py --daemon
         """
     )
     
@@ -61,6 +83,16 @@ Examples:
         action="store_true",
         help="Show platform information and exit"
     )
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="Run in daemon mode (background service)"
+    )
+    parser.add_argument(
+        "--pid-file",
+        type=str,
+        help="Path to PID file for daemon mode (default: ~/.cursor-chat-monitor.pid)"
+    )
     
     args = parser.parse_args()
     
@@ -81,6 +113,53 @@ Examples:
         
         return 0
     
+    # Set up signal handlers for graceful shutdown
+    setup_signal_handlers()
+    
+    # Handle daemon mode
+    if args.daemon:
+        pid_file = args.pid_file or os.path.expanduser("~/.cursor-chat-monitor.pid")
+        
+        # Check if already running
+        if os.path.exists(pid_file):
+            try:
+                with open(pid_file, 'r') as f:
+                    existing_pid = int(f.read().strip())
+                
+                # Check if process is still running
+                try:
+                    os.kill(existing_pid, 0)  # Signal 0 just checks if process exists
+                    print(f"❌ Already running with PID {existing_pid}")
+                    return 1
+                except (OSError, ProcessLookupError):
+                    # Process doesn't exist, remove stale PID file
+                    os.remove(pid_file)
+            except (ValueError, IOError):
+                # Invalid PID file, remove it
+                try:
+                    os.remove(pid_file)
+                except OSError:
+                    pass
+        
+        # Write our PID
+        try:
+            with open(pid_file, 'w') as f:
+                f.write(str(os.getpid()))
+        except IOError as e:
+            print(f"❌ Cannot create PID file {pid_file}: {e}")
+            return 1
+        
+        # Set up cleanup on exit
+        def cleanup_pid_file():
+            try:
+                if os.path.exists(pid_file):
+                    os.remove(pid_file)
+            except OSError:
+                pass
+        
+        import atexit
+        atexit.register(cleanup_pid_file)
+    
     # Load configuration
     config = load_config(args.config)
     
@@ -91,25 +170,27 @@ Examples:
     
     # Create monitor
     try:
-        monitor = CrossPlatformMonitor(
+        monitor_instance = CrossPlatformMonitor(
             config=config,
             interval_ms=args.interval_ms,
-            debug=args.debug
+            debug=args.debug,
+            daemon_mode=args.daemon
         )
     except Exception as e:
         print(f"❌ Failed to create monitor: {e}")
         return 1
     
     # Check prerequisites
-    if not monitor.check_prerequisites():
+    if not monitor_instance.check_prerequisites():
         print("❌ Prerequisites not met")
         return 1
     
     # Run monitoring
     try:
-        monitor.run_monitoring()
+        monitor_instance.run_monitoring()
     except KeyboardInterrupt:
-        print("\n👋 Goodbye!")
+        if not args.daemon:
+            print("\n👋 Goodbye!")
     except Exception as e:
         print(f"❌ Monitor error: {e}")
         return 1
