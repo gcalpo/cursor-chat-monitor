@@ -5,10 +5,24 @@ import time
 import logging
 import sys
 import os
+import uuid
 from datetime import datetime
 from typing import Dict, List, Any
-from platforms import get_platform_implementations, get_current_platform
+from platforms import get_platform_implementations
 from platforms.base import AppAccessor, AlertSystem, WindowElement
+from core.config import load_config, validate_config
+
+
+def get_current_platform() -> str:
+    """Get current platform name"""
+    if sys.platform == "win32":
+        return "Windows"
+    elif sys.platform == "darwin":
+        return "macOS"
+    elif sys.platform.startswith("linux"):
+        return "Linux"
+    else:
+        return "Unknown"
 
 
 class CrossPlatformMonitor:
@@ -72,18 +86,33 @@ class CrossPlatformMonitor:
         self.logger.info("Monitor stop requested")
     
     def count_texts_in_window(self, window: WindowElement, target_texts: List[str]) -> Dict[str, int]:
-        """Count occurrences of target texts in a window"""
+        """Count occurrences of target texts in a window with timing information"""
         counts = {text: 0 for text in target_texts}
+        traversal_time = 0.0
+        element_count = 0
         
         try:
+            # Start timing the window traversal
+            start_time = time.time()
+            
             # Get all text from the window
             max_depth = self.config.get("MAX_SEARCH_DEPTH", 30)
             all_text_elements = window.get_text_content(max_depth)
             
+            # End timing
+            end_time = time.time()
+            traversal_time = end_time - start_time
+            element_count = len(all_text_elements)
+            
+            # Display timing information
+            window_title = window.get_title()
             if self.debug:
-                self.logger.debug(f"Window '{window.get_title()}' extracted {len(all_text_elements)} text elements")
+                self.logger.debug(f"Window '{window_title}' traversal: {traversal_time:.3f}s for {element_count} elements")
                 for i, text in enumerate(all_text_elements[:5]):  # Show first 5 for debugging
                     self.logger.debug(f"  Text {i+1}: {text[:100]}...")
+            else:
+                # Show timing info even in non-debug mode for performance monitoring
+                print(f"⏱️  Window '{window_title}': {traversal_time:.3f}s ({element_count} elements)")
             
             # Count occurrences (case-insensitive)
             for text_element in all_text_elements:
@@ -207,6 +236,9 @@ class CrossPlatformMonitor:
                 current_generating_counts = {}
                 alerts_triggered = 0
                 
+                # Start timing the complete scan
+                scan_start_time = time.time()
+                
                 for window in windows:
                     window_id = window.get_id()
                     
@@ -284,6 +316,11 @@ class CrossPlatformMonitor:
                 # Update stored counts
                 self.window_text_counts.update(current_scan_counts)
                 self.window_generating_counts.update(current_generating_counts)
+                
+                # End timing the complete scan
+                scan_end_time = time.time()
+                scan_duration = scan_end_time - scan_start_time
+                print(f"⏱️  Total scan duration: {scan_duration:.3f}s for {len(windows)} windows")
                 
                 if alerts_triggered > 0:
                     print(f"🔔 {alerts_triggered} alerts triggered this scan")
