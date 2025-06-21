@@ -22,6 +22,26 @@ A mature, production-ready cross-platform tool for monitoring Cursor IDE convers
 
 ## 🚀 Quick Start
 
+### Simple Run Scripts (Development/Source Mode)
+
+For the easiest experience, use one of the provided run scripts that handle all virtual environment setup automatically:
+
+```bash
+# Cross-platform Python script (recommended)
+python3 run.py
+
+# Unix/Linux/macOS shell script
+./run.sh
+
+# Windows batch script
+run.bat
+
+# All scripts support passing arguments to the main app
+python3 run.py --debug --interval-ms=2000
+./run.sh --platform-info
+run.bat --config=my_config.json
+```
+
 ### Choose Your Platform
 
 Select your operating system for detailed setup instructions:
@@ -30,20 +50,20 @@ Select your operating system for detailed setup instructions:
 - **[🪟 Windows Setup Guide](docs/platforms/windows.md)** - Windows installation and service setup
 - **[🐧 Linux Setup Guide](docs/platforms/linux.md)** - Linux distribution-specific instructions
 
-### Basic Usage
+### Manual Usage (Advanced)
 
 ```bash
 # Check platform support
-cursor-chat-monitor --platform-info
+python3 cursor_chat_monitor.py --platform-info
 
 # Start monitoring (interactive mode)
-cursor-chat-monitor
+python3 cursor_chat_monitor.py
 
 # Start as background service
-cursor-chat-monitor --daemon
+python3 cursor_chat_monitor.py --daemon
 
 # Use custom configuration
-cursor-chat-monitor --config=my_config.json --debug
+python3 cursor_chat_monitor.py --config=my_config.json --debug
 ```
 
 ### Service Management
