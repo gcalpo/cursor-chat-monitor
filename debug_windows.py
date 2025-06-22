@@ -5,7 +5,15 @@ Debug script to test the optimized hybrid Windows window traversal
 import win32gui
 import win32process
 import sys
-import psutil
+
+# Try to import psutil, but make it optional
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    psutil = None
+    PSUTIL_AVAILABLE = False
+
 import uiautomation as auto
 import logging
 import time
@@ -44,13 +52,18 @@ def enum_windows_proc(hwnd, windows):
         if window_text and "cursor" in window_text.lower():
             try:
                 _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                # Check process name using psutil
-                try:
-                    proc = psutil.Process(pid)
-                    if proc.name().lower() == "cursor.exe":
-                        windows.append((hwnd, window_text, pid))
-                except Exception as e:
-                    pass  # Could not get process name, skip
+                # Check process name using psutil if available
+                if PSUTIL_AVAILABLE:
+                    try:
+                        proc = psutil.Process(pid)
+                        if proc.name().lower() == "cursor.exe":
+                            windows.append((hwnd, window_text, pid))
+                    except Exception as e:
+                        pass  # Could not get process name, skip
+                else:
+                    # Fallback: assume it's Cursor if the window title contains "cursor"
+                    # This is less reliable but allows the app to work without psutil
+                    windows.append((hwnd, window_text, pid))
             except:
                 pass
     return True

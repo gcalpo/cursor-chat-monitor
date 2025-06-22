@@ -185,22 +185,33 @@ class CrossPlatformMonitor:
         """Format window title for audio announcement based on config"""
         mode = self.config.get("WINDOW_TITLE_ANNOUNCE_MODE", "last")
         replace_periods = self.config.get("REPLACE_PERIODS_IN_ANNOUNCEMENT", True)
-        
+
         formatted_title = window_title
-        
+
+        # Split only on emdash or hyphen with spaces around them
+        if " — " in window_title:
+            segments = [seg.strip() for seg in window_title.split(" — ")]
+        elif " - " in window_title:
+            segments = [seg.strip() for seg in window_title.split(" - ")]
+        else:
+            segments = [window_title.strip()]
+
         if mode == "first":
-            # Take first word/segment
-            parts = window_title.split()
-            formatted_title = parts[0] if parts else window_title
+            formatted_title = segments[0] if segments else window_title
         elif mode == "last":
-            # Take last word/segment (often the most relevant)
-            parts = window_title.replace(" — ", " ").split()
-            formatted_title = parts[-1] if parts else window_title
+            formatted_title = segments[-1] if segments else window_title
+        elif mode == "next to last":
+            if len(segments) >= 2:
+                formatted_title = segments[-2]
+            elif len(segments) == 1:
+                formatted_title = segments[0]
+            else:
+                formatted_title = window_title
         # "full" mode uses the complete title as-is
-        
+
         if replace_periods:
             formatted_title = formatted_title.replace(".", " ")
-        
+
         return formatted_title
     
     def play_alert(self, window_title: str, old_count: int, new_count: int, target_text: Optional[str] = None) -> None:

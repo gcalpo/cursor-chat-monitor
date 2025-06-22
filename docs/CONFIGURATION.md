@@ -181,15 +181,16 @@ New-Item -Path "$env:USERPROFILE\.cursor_chat_monitor" -ItemType File
 #### `WINDOW_TITLE_ANNOUNCE_MODE`
 
 - **Type**: String
-- **Default**: `"last"`
-- **Options**: `"full"`, `"first"`, `"last"`
+- **Default**: `"next to last"` (Windows), `"last"` (macOS/Linux)
+- **Options**: `"full"`, `"first"`, `"last"`, `"next to last"`
 - **Description**: How to announce window titles in audio alerts
 - **Examples**:
   ```json
   // Window title: "main.py — Cursor"
-  "full":  "main.py — Cursor"
-  "first": "main.py"
-  "last":  "Cursor"
+  "full":        "main.py — Cursor"
+  "first":       "main.py"
+  "last":        "Cursor"
+  "next to last": "main.py"
   ```
 
 #### `REPLACE_PERIODS_IN_ANNOUNCEMENT`

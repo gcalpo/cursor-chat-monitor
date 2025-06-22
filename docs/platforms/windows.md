@@ -244,7 +244,7 @@ Create `%USERPROFILE%\.cursor_chat_monitor` with Windows-specific settings:
 {
   "VOICE_NAME": "Microsoft David Desktop",
   "SPEECH_RATE": 175,
-  "WINDOW_TITLE_ANNOUNCE_MODE": "last",
+  "WINDOW_TITLE_ANNOUNCE_MODE": "next to last",
   "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
   "AWAITING_USER_ACTION_TEXTS": [
     "resume the conversation",

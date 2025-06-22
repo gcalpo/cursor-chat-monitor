@@ -1,7 +1,8 @@
 # Cursor Conversation Watcher - Cross-Platform Requirements
 
 # Core dependencies (all platforms)
-psutil>=6.0.0
+# Note: psutil is optional - if installation fails, the app will work with reduced functionality
+# psutil>=6.0.0  # Commented out due to Python 3.13 Windows ARM64 build issues
 
 # macOS-specific dependencies
 pyobjc-framework-Cocoa>=10.0; sys_platform == "darwin"

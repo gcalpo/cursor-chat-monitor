@@ -33,7 +33,14 @@ try:
     import win32con
     import win32process
     import pyttsx3
-    import psutil
+    
+    # Try to import psutil, but make it optional
+    try:
+        import psutil
+        PSUTIL_AVAILABLE = True
+    except ImportError:
+        psutil = None
+        PSUTIL_AVAILABLE = False
     
     # Import uiautomation with suppressed output
     with SuppressOutput():
@@ -413,15 +420,29 @@ class WindowsAppAccessor(AppAccessor):
                 if win32gui.IsWindowVisible(hwnd):
                     window_text = win32gui.GetWindowText(hwnd)
                     if window_text and app_name.lower() in window_text.lower():
+                        # Note: This detects ALL Cursor windows including:
+                        # - "Cursor" (main IDE window)
+                        # - "Project Name - cursor-chat-monitor - Cursor" (project windows)
+                        # - ".filename - cursor-chat-monitor - Cursor" (file windows)
+                        # 
+                        # To filter for specific window types, you could add conditions like:
+                        # - Only project windows: if " - cursor-chat-monitor - Cursor" in window_text
+                        # - Only main window: if window_text == "Cursor"
+                        # - Exclude settings: if "Settings" not in window_text
                         try:
                             _, pid = win32process.GetWindowThreadProcessId(hwnd)
-                            # Check process name using psutil
-                            try:
-                                proc = psutil.Process(pid)
-                                if proc.name().lower() == "cursor.exe":
-                                    windows.append((hwnd, window_text, pid))
-                            except Exception as e:
-                                pass  # Could not get process name, skip
+                            # Check process name using psutil if available
+                            if PSUTIL_AVAILABLE:
+                                try:
+                                    proc = psutil.Process(pid)
+                                    if proc.name().lower() == "cursor.exe":
+                                        windows.append((hwnd, window_text, pid))
+                                except Exception as e:
+                                    pass  # Could not get process name, skip
+                            else:
+                                # Fallback: assume it's Cursor if the window title contains "cursor"
+                                # This is less reliable but allows the app to work without psutil
+                                windows.append((hwnd, window_text, pid))
                         except:
                             pass
                 return True
