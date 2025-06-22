@@ -7,7 +7,7 @@ import sys
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, Tuple
 from platforms import get_platform_implementations
 from platforms.base import AppAccessor, AlertSystem, WindowElement
 from core.config import load_config, validate_config
@@ -28,7 +28,7 @@ def get_current_platform() -> str:
 class CrossPlatformMonitor:
     """Cross-platform monitor for cursor chat text detection"""
     
-    def __init__(self, config: Dict[str, Any], interval_ms: int = None, debug: bool = None, daemon_mode: bool = False):
+    def __init__(self, config: Dict[str, Any], interval_ms: Optional[int] = None, debug: Optional[bool] = None, daemon_mode: bool = False):
         self.config = config
         self.interval_ms = interval_ms if interval_ms is not None else config.get("DEFAULT_SCAN_INTERVAL_MS", 1500)
         self.debug = debug if debug is not None else config.get("DEFAULT_DEBUG_MODE", False)
@@ -131,7 +131,55 @@ class CrossPlatformMonitor:
         except Exception as e:
             self.logger.error(f"Error counting texts in window '{window.get_title()}': {e}")
         
-        return awaiting_counts, generating_counts
+        return counts
+
+    def count_texts_in_extracted_content(self, all_text_elements: List[str], target_texts: List[str]) -> Dict[str, int]:
+        """Count occurrences of target texts in already extracted text content."""
+        counts = {text: 0 for text in target_texts}
+        
+        # Count occurrences (case-insensitive)
+        for text_element in all_text_elements:
+            text_lower = text_element.lower()
+            for target_text in target_texts:
+                if target_text.lower() in text_lower:
+                    counts[target_text] += 1
+        
+        return counts
+
+    def extract_text_from_window(self, window: WindowElement) -> Tuple[List[str], float, int]:
+        """Extract all text content from a window with timing information."""
+        traversal_time = 0.0
+        element_count = 0
+        
+        try:
+            # Start timing the window traversal
+            start_time = time.time()
+            
+            # Get all text from the window
+            max_depth = self.config.get("MAX_SEARCH_DEPTH", 30)
+            sidebar_depth_limit = self.config.get("SIDEBAR_DEPTH_LIMIT", 20)
+            all_text_elements = window.get_text_content(max_depth, sidebar_depth_limit)
+            
+            # End timing
+            end_time = time.time()
+            traversal_time = end_time - start_time
+            element_count = len(all_text_elements)
+            
+            # Display timing information
+            window_title = window.get_title()
+            if self.debug:
+                self.logger.debug(f"Window '{window_title}' traversal: {traversal_time:.3f}s for {element_count} elements")
+            else:
+                # Show timing info even in non-debug mode for performance monitoring
+                print(f"⏱️  Window '{window_title}': {traversal_time:.3f}s ({element_count} elements)")
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting text from window '{window.get_title()}': {e}")
+            all_text_elements = []
+            traversal_time = 0.0
+            element_count = 0
+        
+        return all_text_elements, traversal_time, element_count
     
     def format_window_title_for_announcement(self, window_title: str) -> str:
         """Format window title for audio announcement based on config"""
@@ -155,7 +203,7 @@ class CrossPlatformMonitor:
         
         return formatted_title
     
-    def play_alert(self, window_title: str, old_count: int, new_count: int, target_text: str = None) -> None:
+    def play_alert(self, window_title: str, old_count: int, new_count: int, target_text: Optional[str] = None) -> None:
         """Play audio alert for text count change"""
         announce_title = self.format_window_title_for_announcement(window_title)
         
@@ -249,8 +297,13 @@ class CrossPlatformMonitor:
                 for window in windows:
                     window_id = window.get_id()
                     
-                    # Count awaiting user action texts
-                    current_counts, gen_counts = self.count_texts_in_window(window, self.awaiting_user_action_texts, self.generating_texts)
+                    # Extract text content once per window (optimization)
+                    all_text_elements, traversal_time, element_count = self.extract_text_from_window(window)
+                    
+                    # Count both types of texts in the extracted content
+                    current_counts = self.count_texts_in_extracted_content(all_text_elements, self.awaiting_user_action_texts)
+                    gen_counts = self.count_texts_in_extracted_content(all_text_elements, self.generating_texts)
+                    
                     current_scan_counts[window_id] = current_counts
                     current_generating_counts[window_id] = gen_counts
                     
