@@ -23,7 +23,7 @@ class LinuxWindowElement(WindowElement):
         self.atspi_window = atspi_window
         self.logger = logging.getLogger(__name__)
     
-    def get_text_content(self, max_depth: int = 30) -> List[str]:
+    def get_text_content(self, max_depth: int = 30, sidebar_depth_limit: int = 20) -> List[str]:
         """Extract all text content from this Linux window element"""
         texts = []
         

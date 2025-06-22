@@ -73,6 +73,9 @@ def get_default_config() -> Dict[str, Any]:
         # Maximum depth to search in accessibility tree
         "MAX_SEARCH_DEPTH": 30,
         
+        # Maximum depth to search within chat sidebar (Windows optimization)
+        "SIDEBAR_DEPTH_LIMIT": 20,
+        
         # Voice alert settings (platform-specific defaults)
         "VOICE_NAME": platform_voice_config["default_voice"],
         "SPEECH_RATE": platform_voice_config["default_speech_rate"],

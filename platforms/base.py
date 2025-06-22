@@ -13,7 +13,7 @@ class WindowElement(ABC):
         self.title = title
     
     @abstractmethod
-    def get_text_content(self, max_depth: int = 30) -> List[str]:
+    def get_text_content(self, max_depth: int = 30, sidebar_depth_limit: int = 20) -> List[str]:
         """Extract all text content from this window element"""
         pass
     

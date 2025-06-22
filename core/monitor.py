@@ -97,7 +97,8 @@ class CrossPlatformMonitor:
             
             # Get all text from the window
             max_depth = self.config.get("MAX_SEARCH_DEPTH", 30)
-            all_text_elements = window.get_text_content(max_depth)
+            sidebar_depth_limit = self.config.get("SIDEBAR_DEPTH_LIMIT", 20)
+            all_text_elements = window.get_text_content(max_depth, sidebar_depth_limit)
             
             # End timing
             end_time = time.time()
@@ -108,8 +109,6 @@ class CrossPlatformMonitor:
             window_title = window.get_title()
             if self.debug:
                 self.logger.debug(f"Window '{window_title}' traversal: {traversal_time:.3f}s for {element_count} elements")
-                for i, text in enumerate(all_text_elements[:5]):  # Show first 5 for debugging
-                    self.logger.debug(f"  Text {i+1}: {text[:100]}...")
             else:
                 # Show timing info even in non-debug mode for performance monitoring
                 print(f"⏱️  Window '{window_title}': {traversal_time:.3f}s ({element_count} elements)")

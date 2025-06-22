@@ -55,8 +55,8 @@ class WindowsWindowElement(WindowElement):
         self.hwnd = hwnd
         self.logger = logging.getLogger(__name__)
     
-    def get_text_content(self, max_depth: int = 30) -> List[str]:
-        """Extract all text content from this Windows window element using both Win32 and UI Automation"""
+    def get_text_content(self, max_depth: int = 30, sidebar_depth_limit: int = 20) -> List[str]:
+        """Extract all text content from this Windows window element using optimized targeted traversal."""
         texts = []
         visited = set()
 
@@ -85,47 +85,139 @@ class WindowsWindowElement(WindowElement):
         except Exception as e:
             self.logger.debug(f"Error in Win32 text extraction: {e}")
 
-        # Method 2: UI Automation extraction (for web elements and modern controls)
+        # Method 2: Optimized UI Automation extraction using targeted traversal
         try:
             uia_element = auto.ControlFromHandle(self.hwnd)
             if uia_element:
-                self._extract_uia_text(uia_element, texts, 0, max_depth)
+                self._extract_text_targeted(uia_element, texts, max_depth, sidebar_depth_limit)
         except Exception as e:
             self.logger.debug(f"Error in UI Automation text extraction: {e}")
 
         return texts
-    
-    def _extract_uia_text(self, element, texts, current_depth, max_depth):
-        """Recursively extract text from UI Automation elements"""
-        if current_depth > max_depth:
-            return
+
+    def _extract_text_targeted(self, root_element, texts, max_depth, sidebar_depth_limit):
+        """Hybrid targeted traversal: fast path through all container types, fallback to broader container traversal."""
+        from collections import deque
         
-        try:
-            # Get various text properties - expanded list
-            for prop_name in ['Name', 'AutomationId', 'ClassName', 'HelpText', 'LocalizedControlType', 'ControlType']:
+        # --- Fast Path: Recursively search all container type children at each level ---
+        def fast_path_sidebar_search(element, depth):
+            if max_depth is not None and depth > max_depth:
+                return None
+            try:
+                automation_id = getattr(element, 'AutomationId', '')
+                if 'aichat' in automation_id.lower() or 'workbench.panel.aichat' in automation_id:
+                    return element
+                
+                # Define all container types that can be in the sidebar path
+                container_types = [
+                    'groupcontrol', 'panecontrol', 'windowcontrol', 'documentcontrol',
+                    'group', 'pane', 'window', 'document'
+                ]
+                
+                class_name = getattr(element, 'ClassName', '')
+                control_type = getattr(element, 'ControlTypeName', '') if hasattr(element, 'ControlTypeName') else ''
+                localized_type = getattr(element, 'LocalizedControlType', '') if hasattr(element, 'LocalizedControlType') else ''
+                
+                # Check if this element is a container type we should descend into
+                is_container = (class_name == 'Chrome_RenderWidgetHostHWND' or
+                               control_type.lower() in container_types or
+                               localized_type.lower() in container_types)
+                
+                if is_container:
+                    children = element.GetChildren()
+                    for child in children:
+                        found = fast_path_sidebar_search(child, depth + 1)
+                        if found:
+                            return found
+            except Exception:
+                pass
+            return None
+
+        sidebar_element = fast_path_sidebar_search(root_element, 0)
+        if sidebar_element:
+            self.logger.debug(f"[FAST PATH] Found chat sidebar with AutomationId: {getattr(sidebar_element, 'AutomationId', '')}")
+            self._extract_text_from_sidebar(sidebar_element, texts, sidebar_depth_limit)
+            return True
+
+        # --- Fallback: Broader container traversal (current logic) ---
+        queue = deque([(root_element, 0)])
+        element_count = 0
+        while queue and element_count < 10000:  # Safety limit
+            current_element, depth = queue.popleft()
+            if max_depth is not None and depth > max_depth:
+                continue
+            element_count += 1
+            try:
+                automation_id = getattr(current_element, 'AutomationId', '')
+                name = getattr(current_element, 'Name', '')
+                class_name = getattr(current_element, 'ClassName', '')
+                control_type = getattr(current_element, 'ControlTypeName', '') if hasattr(current_element, 'ControlTypeName') else ''
+                localized_type = getattr(current_element, 'LocalizedControlType', '') if hasattr(current_element, 'LocalizedControlType') else ''
+                is_chat_sidebar = ('aichat' in automation_id.lower() or 
+                                  'workbench.panel.aichat' in automation_id or
+                                  'chat' in name.lower() and 'panel' in automation_id.lower())
+                if is_chat_sidebar:
+                    self.logger.debug(f"[FALLBACK] Found chat sidebar with AutomationId: {automation_id}")
+                    self._extract_text_from_sidebar(current_element, texts, sidebar_depth_limit)
+                    return True
+                # Traverse all container types seen in the sidebar path
+                should_traverse = False
+                container_types = [
+                    'groupcontrol', 'panecontrol', 'windowcontrol', 'documentcontrol',
+                    'group', 'pane', 'window', 'document'
+                ]
+                if (class_name == 'Chrome_RenderWidgetHostHWND' or
+                    control_type.lower() in container_types or
+                    localized_type.lower() in container_types or
+                    ('workbench.panel.aichat' in automation_id.lower())):
+                    should_traverse = True
+                if should_traverse:
+                    try:
+                        children = current_element.GetChildren()
+                        for child in children:
+                            queue.append((child, depth + 1))
+                    except:
+                        pass
+            except Exception:
+                pass
+        self.logger.debug(f"Chat sidebar not found in targeted traversal (processed {element_count} elements)")
+        return False
+
+    def _extract_text_from_sidebar(self, sidebar_element, texts, max_depth):
+        """Extract all text from the sidebar and its descendants with depth limit."""
+        from collections import deque
+        queue = deque([(sidebar_element, 0)])
+        
+        while queue:
+            current_element, depth = queue.popleft()
+            if max_depth is not None and depth > max_depth:
+                continue
+            
+            try:
+                # Get various text properties
+                for prop_name in ['Name', 'AutomationId', 'ClassName', 'HelpText', 'LocalizedControlType', 'ControlType']:
+                    try:
+                        value = getattr(current_element, prop_name, None)
+                        if value and isinstance(value, str) and value.strip():
+                            texts.append(value.strip())
+                    except:
+                        pass
+                
+                # Also try to get the element's text content directly
                 try:
-                    value = getattr(element, prop_name, None)
-                    if value and isinstance(value, str) and value.strip():
-                        texts.append(value.strip())
+                    if hasattr(current_element, 'GetText'):
+                        text_content = current_element.GetText()
+                        if text_content and isinstance(text_content, str) and text_content.strip():
+                            texts.append(text_content.strip())
                 except:
                     pass
-            # Also try to get the element's text content directly
-            try:
-                if hasattr(element, 'GetText'):
-                    text_content = element.GetText()
-                    if text_content and isinstance(text_content, str) and text_content.strip():
-                        texts.append(text_content.strip())
-            except:
-                pass
-            # Get children and recurse
-            try:
-                children = element.GetChildren()
+                
+                # Add children
+                children = current_element.GetChildren()
                 for child in children:
-                    self._extract_uia_text(child, texts, current_depth + 1, max_depth)
-            except:
+                    queue.append((child, depth + 1))
+            except Exception as e:
                 pass
-        except Exception as e:
-            self.logger.debug(f"Error extracting UIA text at depth {current_depth}: {e}")
 
 
 class WindowsAppAccessor(AppAccessor):
@@ -252,10 +344,11 @@ class WindowsAlertSystem(AlertSystem):
 class WindowsPlatformConfig(PlatformConfig):
     """Windows-specific platform configuration"""
     
-    def __init__(self):
+    def __init__(self, sidebar_depth_limit: int = 20):
         super().__init__()
         self.supports_accessibility = True  # Via Win32 APIs
         self.supports_tts = True
         self.supports_notifications = False  # Not implemented yet
         self.required_permissions = []  # No special permissions needed
-        self.optional_dependencies = ["pywin32", "pyttsx3"] 
+        self.optional_dependencies = ["pywin32", "pyttsx3"]
+        self.sidebar_depth_limit = sidebar_depth_limit  # Configurable depth limit for sidebar traversal 

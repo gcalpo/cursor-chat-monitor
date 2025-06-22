@@ -34,11 +34,11 @@ class MacOSWindowElement(WindowElement):
         self.ax_element = ax_element
         self.logger = logging.getLogger(__name__)
     
-    def get_text_content(self, max_depth: int = 30) -> List[str]:
+    def get_text_content(self, max_depth: int = 30, sidebar_depth_limit: int = 20) -> List[str]:
         """Extract all text content from this macOS window element"""
-        return self._get_all_text_elements(self.ax_element, max_depth)
+        return self._get_all_text_elements(self.ax_element, max_depth, sidebar_depth_limit)
     
-    def _get_all_text_elements(self, element, max_depth: int = 30, current_depth: int = 0) -> List[str]:
+    def _get_all_text_elements(self, element, max_depth: int = 30, current_depth: int = 0, sidebar_depth_limit: int = 20) -> List[str]:
         """Recursively extract all text from accessibility elements with duplicate detection"""
         texts = []
         seen_texts = set()  # Track seen texts to avoid duplicates
@@ -75,7 +75,7 @@ class MacOSWindowElement(WindowElement):
             error_code, children = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute, None)
             if error_code == kAXErrorSuccess and children:
                 for child in children:
-                    child_texts = self._get_all_text_elements(child, max_depth, current_depth + 1)
+                    child_texts = self._get_all_text_elements(child, max_depth, current_depth + 1, sidebar_depth_limit)
                     for child_text in child_texts:
                         if child_text not in seen_texts:
                             texts.append(child_text)
