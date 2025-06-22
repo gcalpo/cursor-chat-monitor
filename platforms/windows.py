@@ -46,29 +46,29 @@ try:
 except ImportError:
     WIN32_AVAILABLE = False
 
-# Global cache for sidebar paths on a per-window PID basis
-# Key: window_pid, Value: path_structure
+# Global cache for sidebar paths on a per-window handle basis
+# Key: window_handle, Value: path_structure
 GLOBAL_SIDEBAR_PATH_CACHE = {}
 
-def get_cached_sidebar_path(window_pid):
-    """Get cached sidebar path for a window PID if it exists."""
-    if window_pid in GLOBAL_SIDEBAR_PATH_CACHE:
-        path_structure = GLOBAL_SIDEBAR_PATH_CACHE[window_pid]
-        logging.getLogger(__name__).debug(f"Using cached sidebar path for PID {window_pid}")
+def get_cached_sidebar_path(window_handle):
+    """Get cached sidebar path for a window handle if it exists."""
+    if window_handle in GLOBAL_SIDEBAR_PATH_CACHE:
+        path_structure = GLOBAL_SIDEBAR_PATH_CACHE[window_handle]
+        logging.getLogger(__name__).debug(f"Using cached sidebar path for window handle {window_handle}")
         return path_structure
     return None
 
-def cache_sidebar_path(window_pid, path_structure):
-    """Cache the sidebar path for a window PID indefinitely."""
-    GLOBAL_SIDEBAR_PATH_CACHE[window_pid] = path_structure
-    logging.getLogger(__name__).debug(f"Cached sidebar path for PID {window_pid} with {len(path_structure)} elements")
+def cache_sidebar_path(window_handle, path_structure):
+    """Cache the sidebar path for a window handle indefinitely."""
+    GLOBAL_SIDEBAR_PATH_CACHE[window_handle] = path_structure
+    logging.getLogger(__name__).debug(f"Cached sidebar path for window handle {window_handle} with {len(path_structure)} elements")
 
-def clear_sidebar_path_cache(window_pid=None):
-    """Clear the sidebar path cache for a specific PID or all PIDs."""
-    if window_pid is not None:
-        if window_pid in GLOBAL_SIDEBAR_PATH_CACHE:
-            del GLOBAL_SIDEBAR_PATH_CACHE[window_pid]
-            logging.getLogger(__name__).debug(f"Cleared cached sidebar path for PID {window_pid}")
+def clear_sidebar_path_cache(window_handle=None):
+    """Clear the sidebar path cache for a specific window handle or all window handles."""
+    if window_handle is not None:
+        if window_handle in GLOBAL_SIDEBAR_PATH_CACHE:
+            del GLOBAL_SIDEBAR_PATH_CACHE[window_handle]
+            logging.getLogger(__name__).debug(f"Cleared cached sidebar path for window handle {window_handle}")
     else:
         GLOBAL_SIDEBAR_PATH_CACHE.clear()
         logging.getLogger(__name__).debug("Cleared all cached sidebar paths")
@@ -76,9 +76,9 @@ def clear_sidebar_path_cache(window_pid=None):
 def get_sidebar_path_cache_stats():
     """Get statistics about the sidebar path cache."""
     return {
-        'cached_pids': list(GLOBAL_SIDEBAR_PATH_CACHE.keys()),
+        'cached_windows': list(GLOBAL_SIDEBAR_PATH_CACHE.keys()),
         'cache_size': len(GLOBAL_SIDEBAR_PATH_CACHE),
-        'cached_paths': {pid: len(path_structure) for pid, path_structure in GLOBAL_SIDEBAR_PATH_CACHE.items()}
+        'cached_paths': {hwnd: len(path_structure) for hwnd, path_structure in GLOBAL_SIDEBAR_PATH_CACHE.items()}
     }
 
 class WindowsWindowElement(WindowElement):
@@ -110,9 +110,9 @@ class WindowsWindowElement(WindowElement):
 
     def _analyze_sidebar_path_structure(self, root_element, max_depth=30):
         """Analyze the actual path structure to the sidebar and return the optimal traversal sequence."""
-        # Check global cache first if PID is available
-        if self.pid:
-            cached_path = get_cached_sidebar_path(self.pid)
+        # Check global cache first if window handle is available
+        if self.hwnd:
+            cached_path = get_cached_sidebar_path(self.hwnd)
             if cached_path is not None:
                 return cached_path
         
@@ -201,9 +201,9 @@ class WindowsWindowElement(WindowElement):
                 'name': elem['name']
             })
         
-        # Cache the path structure globally if PID is available
-        if self.pid:
-            cache_sidebar_path(self.pid, reference_path)
+        # Cache the path structure globally if window handle is available
+        if self.hwnd:
+            cache_sidebar_path(self.hwnd, reference_path)
         
         self.logger.debug(f"Analyzed {len(sidebar_paths)} sidebar paths, cached reference path with {len(reference_path)} elements")
         return reference_path
@@ -543,13 +543,13 @@ class WindowsAppAccessor(AppAccessor):
         """Get statistics about the sidebar path cache."""
         return get_sidebar_path_cache_stats()
     
-    def clear_cache(self, window_pid: Optional[int] = None) -> None:
-        """Clear the sidebar path cache for a specific PID or all PIDs."""
-        clear_sidebar_path_cache(window_pid)
+    def clear_cache(self, window_handle: Optional[int] = None) -> None:
+        """Clear the sidebar path cache for a specific window handle or all window handles."""
+        clear_sidebar_path_cache(window_handle)
     
-    def is_cached(self, window_pid: int) -> bool:
-        """Check if a window PID has a cached sidebar path."""
-        return window_pid in GLOBAL_SIDEBAR_PATH_CACHE
+    def is_cached(self, window_handle: int) -> bool:
+        """Check if a window handle has a cached sidebar path."""
+        return window_handle in GLOBAL_SIDEBAR_PATH_CACHE
 
 
 class WindowsAlertSystem(AlertSystem):
