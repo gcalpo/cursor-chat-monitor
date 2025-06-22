@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test script for the new 'next to last' window title announcement mode"""
+"""Test script for the new 'next-to-last' window title announcement mode"""
 
 from core.config import get_default_config
 from core.monitor import CrossPlatformMonitor
@@ -41,7 +41,7 @@ def test_all_modes():
     print("\nTesting all announcement modes:")
     print("-" * 50)
     
-    modes = ["full", "first", "last", "next to last"]
+    modes = ["full", "first", "last", "next-to-last"]
     
     for mode in modes:
         config["WINDOW_TITLE_ANNOUNCE_MODE"] = mode

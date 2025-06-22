@@ -56,7 +56,7 @@ def get_default_config() -> Dict[str, Any]:
     
     # Set platform-specific defaults for window title announcement mode
     if platform == "windows":
-        window_title_announce_mode = "next to last"
+        window_title_announce_mode = "next-to-last"
     else:
         window_title_announce_mode = "last"
     
@@ -90,8 +90,8 @@ def get_default_config() -> Dict[str, Any]:
         # Platform-specific voice configuration
         "PLATFORM_VOICE_CONFIG": platform_voice_config,
         
-        # Window title announcement mode: 'full', 'first', 'last', or 'next to last'
-        "WINDOW_TITLE_ANNOUNCE_MODE": window_title_announce_mode,  # Options: 'full', 'first', 'last', 'next to last'
+        # Window title announcement mode: 'full', 'first', 'last', or 'next-to-last'
+        "WINDOW_TITLE_ANNOUNCE_MODE": window_title_announce_mode,  # Options: 'full', 'first', 'last', 'next-to-last'
         
         # Replace periods with spaces in announcement (default: True)
         "REPLACE_PERIODS_IN_ANNOUNCEMENT": True,

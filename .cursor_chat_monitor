@@ -4,7 +4,7 @@
   "_comment3": "Alternatively, use --config=path/to/config.json for a custom location",
   "_comment4": "Voice settings (VOICE_NAME and SPEECH_RATE) are automatically set to platform-specific defaults",
   "_comment5": "Platform defaults: Windows=Microsoft David Desktop, macOS=Daniel, Linux=default",
-  "_comment6": "WINDOW_TITLE_ANNOUNCE_MODE defaults: Windows=next to last, macOS/Linux=last",
+  "_comment6": "WINDOW_TITLE_ANNOUNCE_MODE defaults: Windows=next-to-last, macOS/Linux=last",
   "AWAITING_USER_ACTION_TEXTS": [
     "resume the conversation",
     "Connection failed",
@@ -20,7 +20,7 @@
   "_comment_voice2": "You can override these by setting explicit values below",
   "VOICE_NAME": "PLATFORM_DEFAULT",
   "SPEECH_RATE": "PLATFORM_DEFAULT",
-  "WINDOW_TITLE_ANNOUNCE_MODE": "next to last",
+  "WINDOW_TITLE_ANNOUNCE_MODE": "next-to-last",
   "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
   "ANNOUNCE_GENERATING_STARTED": true,
   "GENERATING_STARTED_DEBOUNCE_SECONDS": 10,

@@ -200,7 +200,7 @@ class CrossPlatformMonitor:
             formatted_title = segments[0] if segments else window_title
         elif mode == "last":
             formatted_title = segments[-1] if segments else window_title
-        elif mode == "next to last":
+        elif mode == "next-to-last":
             if len(segments) >= 2:
                 formatted_title = segments[-2]
             elif len(segments) == 1:
