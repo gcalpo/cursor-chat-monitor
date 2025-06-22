@@ -85,9 +85,10 @@ class CrossPlatformMonitor:
         self.running = False
         self.logger.info("Monitor stop requested")
     
-    def count_texts_in_window(self, window: WindowElement, target_texts: List[str]) -> Dict[str, int]:
-        """Count occurrences of target texts in a window with timing information"""
-        counts = {text: 0 for text in target_texts}
+    def count_texts_in_window(self, window: WindowElement, awaiting_texts: List[str], generating_texts: List[str]) -> tuple[Dict[str, int], Dict[str, int]]:
+        """Count occurrences of both awaiting and generating texts in a window with single traversal"""
+        awaiting_counts = {text: 0 for text in awaiting_texts}
+        generating_counts = {text: 0 for text in generating_texts}
         traversal_time = 0.0
         element_count = 0
         
@@ -95,7 +96,7 @@ class CrossPlatformMonitor:
             # Start timing the window traversal
             start_time = time.time()
             
-            # Get all text from the window
+            # Get all text from the window (single traversal)
             max_depth = self.config.get("MAX_SEARCH_DEPTH", 30)
             sidebar_depth_limit = self.config.get("SIDEBAR_DEPTH_LIMIT", 20)
             all_text_elements = window.get_text_content(max_depth, sidebar_depth_limit)
@@ -105,7 +106,7 @@ class CrossPlatformMonitor:
             traversal_time = end_time - start_time
             element_count = len(all_text_elements)
             
-            # Display timing information
+            # Display timing information (only once per window now)
             window_title = window.get_title()
             if self.debug:
                 self.logger.debug(f"Window '{window_title}' traversal: {traversal_time:.3f}s for {element_count} elements")
@@ -113,17 +114,24 @@ class CrossPlatformMonitor:
                 # Show timing info even in non-debug mode for performance monitoring
                 print(f"⏱️  Window '{window_title}': {traversal_time:.3f}s ({element_count} elements)")
             
-            # Count occurrences (case-insensitive)
+            # Count occurrences for both text sets (case-insensitive)
             for text_element in all_text_elements:
                 text_lower = text_element.lower()
-                for target_text in target_texts:
+                
+                # Check awaiting user action texts
+                for target_text in awaiting_texts:
                     if target_text.lower() in text_lower:
-                        counts[target_text] += 1
+                        awaiting_counts[target_text] += 1
+                
+                # Check generating texts
+                for target_text in generating_texts:
+                    if target_text.lower() in text_lower:
+                        generating_counts[target_text] += 1
             
         except Exception as e:
             self.logger.error(f"Error counting texts in window '{window.get_title()}': {e}")
         
-        return counts
+        return awaiting_counts, generating_counts
     
     def format_window_title_for_announcement(self, window_title: str) -> str:
         """Format window title for audio announcement based on config"""
@@ -242,11 +250,8 @@ class CrossPlatformMonitor:
                     window_id = window.get_id()
                     
                     # Count awaiting user action texts
-                    current_counts = self.count_texts_in_window(window, self.awaiting_user_action_texts)
+                    current_counts, gen_counts = self.count_texts_in_window(window, self.awaiting_user_action_texts, self.generating_texts)
                     current_scan_counts[window_id] = current_counts
-                    
-                    # Count generating texts
-                    gen_counts = self.count_texts_in_window(window, self.generating_texts)
                     current_generating_counts[window_id] = gen_counts
                     
                     # Handle generating text special logic

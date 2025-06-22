@@ -14,7 +14,7 @@
     "generating"
   ],
   "DEFAULT_SCAN_INTERVAL_MS": 1500,
-  "MAX_SEARCH_DEPTH": 30,
+  "MAX_SEARCH_DEPTH": 50,
   "_comment_voice": "Voice settings will be automatically set to platform-specific defaults",
   "_comment_voice2": "You can override these by setting explicit values below",
   "VOICE_NAME": "PLATFORM_DEFAULT",

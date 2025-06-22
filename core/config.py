@@ -71,7 +71,7 @@ def get_default_config() -> Dict[str, Any]:
         "DEFAULT_SCAN_INTERVAL_MS": 1500,
         
         # Maximum depth to search in accessibility tree
-        "MAX_SEARCH_DEPTH": 30,
+        "MAX_SEARCH_DEPTH": 50,
         
         # Maximum depth to search within chat sidebar (Windows optimization)
         "SIDEBAR_DEPTH_LIMIT": 20,

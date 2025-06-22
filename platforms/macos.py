@@ -34,55 +34,57 @@ class MacOSWindowElement(WindowElement):
         self.ax_element = ax_element
         self.logger = logging.getLogger(__name__)
     
-    def get_text_content(self, max_depth: int = 30, sidebar_depth_limit: int = 20) -> List[str]:
-        """Extract all text content from this macOS window element"""
-        return self._get_all_text_elements(self.ax_element, max_depth, sidebar_depth_limit)
+    def get_text_content(self, max_depth: int = 50, sidebar_depth_limit: int = 20) -> List[str]:
+        """Extract all text content from this macOS window element with deeper traversal for chat content"""
+        return self._get_all_text_elements(self.ax_element, max_depth, 0, sidebar_depth_limit)
     
-    def _get_all_text_elements(self, element, max_depth: int = 30, current_depth: int = 0, sidebar_depth_limit: int = 20) -> List[str]:
-        """Recursively extract all text from accessibility elements with duplicate detection"""
+    def _get_all_text_elements(self, element, max_depth: int = 50, current_depth: int = 0, sidebar_depth_limit: int = 20) -> List[str]:
+        """Extract all text from accessibility elements using breadth-first search for better performance"""
+        from collections import deque
+        
         texts = []
         seen_texts = set()  # Track seen texts to avoid duplicates
+        queue = deque([(element, 0)])  # (element, depth)
         
-        if current_depth > max_depth:
-            return texts
-        
-        try:
-            # Try to get value first (for text fields, static text, etc.)
-            error_code, value = AXUIElementCopyAttributeValue(element, kAXValueAttribute, None)
-            if error_code == kAXErrorSuccess and value and isinstance(value, str):
-                value = value.strip()
-                if value and len(value) > 2 and value not in seen_texts:  # Ignore very short strings
-                    texts.append(value)
-                    seen_texts.add(value)
+        while queue:
+            current_element, depth = queue.popleft()
             
-            # Try to get title
-            error_code, title = AXUIElementCopyAttributeValue(element, kAXTitleAttribute, None)
-            if error_code == kAXErrorSuccess and title and isinstance(title, str):
-                title = title.strip()
-                if title and len(title) > 2 and title not in seen_texts:
-                    texts.append(title)
-                    seen_texts.add(title)
+            if depth > max_depth:
+                continue
             
-            # Try to get description
-            error_code, desc = AXUIElementCopyAttributeValue(element, kAXDescriptionAttribute, None)
-            if error_code == kAXErrorSuccess and desc and isinstance(desc, str):
-                desc = desc.strip()
-                if desc and len(desc) > 2 and desc not in seen_texts:
-                    texts.append(desc)
-                    seen_texts.add(desc)
+            try:
+                # Try to get value first (for text fields, static text, etc.)
+                error_code, value = AXUIElementCopyAttributeValue(current_element, kAXValueAttribute, None)
+                if error_code == kAXErrorSuccess and value and isinstance(value, str):
+                    value = value.strip()
+                    if value and len(value) > 2 and value not in seen_texts:  # Ignore very short strings
+                        texts.append(value)
+                        seen_texts.add(value)
+                
+                # Try to get title
+                error_code, title = AXUIElementCopyAttributeValue(current_element, kAXTitleAttribute, None)
+                if error_code == kAXErrorSuccess and title and isinstance(title, str):
+                    title = title.strip()
+                    if title and len(title) > 2 and title not in seen_texts:
+                        texts.append(title)
+                        seen_texts.add(title)
+                
+                # Try to get description
+                error_code, desc = AXUIElementCopyAttributeValue(current_element, kAXDescriptionAttribute, None)
+                if error_code == kAXErrorSuccess and desc and isinstance(desc, str):
+                    desc = desc.strip()
+                    if desc and len(desc) > 2 and desc not in seen_texts:
+                        texts.append(desc)
+                        seen_texts.add(desc)
+                
+                # Add children to queue for next level processing (breadth-first)
+                error_code, children = AXUIElementCopyAttributeValue(current_element, kAXChildrenAttribute, None)
+                if error_code == kAXErrorSuccess and children:
+                    for child in children:
+                        queue.append((child, depth + 1))
             
-            # Get children to continue recursion
-            error_code, children = AXUIElementCopyAttributeValue(element, kAXChildrenAttribute, None)
-            if error_code == kAXErrorSuccess and children:
-                for child in children:
-                    child_texts = self._get_all_text_elements(child, max_depth, current_depth + 1, sidebar_depth_limit)
-                    for child_text in child_texts:
-                        if child_text not in seen_texts:
-                            texts.append(child_text)
-                            seen_texts.add(child_text)
-        
-        except Exception as e:
-            self.logger.debug(f"Error accessing accessibility element at depth {current_depth}: {e}")
+            except Exception as e:
+                self.logger.debug(f"Error accessing accessibility element at depth {depth}: {e}")
         
         return texts
 
