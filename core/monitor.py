@@ -350,6 +350,24 @@ class CrossPlatformMonitor:
                                     print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
                                     print("-" * 40)
                                     alerts_triggered += 1
+                        else:
+                            # First time seeing this window - alert if generating text found and enabled
+                            if (self.config.get("ANNOUNCE_GENERATING_STARTED", True) and new_count > 0):
+                                # Debounce logic for first scan too
+                                debounce_key = (window_id, gen_text)
+                                now = time.time()
+                                last_alert = self.generating_started_last_alert.get(debounce_key, 0)
+                                debounce_seconds = self.config.get("GENERATING_STARTED_DEBOUNCE_SECONDS", 10)
+                                
+                                if debounce_seconds == 0 or (now - last_alert) >= debounce_seconds:
+                                    self.generating_started_last_alert[debounce_key] = now
+                                    self.play_generating_started_alert(window.get_title(), gen_text)
+                                    print(f"🚨 ALERT: '{gen_text}' found on startup!")
+                                    print(f"   Window: {window.get_title()}")
+                                    print(f"   Count: {new_count}")
+                                    print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+                                    print("-" * 40)
+                                    alerts_triggered += 1
                     
                     # Handle awaiting user action texts
                     if window_id in self.window_text_counts:
