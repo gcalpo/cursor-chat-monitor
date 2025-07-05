@@ -355,14 +355,19 @@ class WindowsWindowElement(WindowElement):
         return False
 
     def _extract_text_from_sidebar(self, sidebar_element, texts, max_depth):
-        """Extract all text from the sidebar and its descendants with depth limit."""
+        """Extract all text from the sidebar and its descendants with NO depth limit.
+        
+        Note: max_depth parameter is kept for compatibility but is ignored when searching within the sidebar.
+        """
         from collections import deque
         queue = deque([(sidebar_element, 0)])
+        elements_processed = 0
         
-        while queue:
+        while queue and elements_processed < 10000:  # Safety limit to prevent infinite loops
             current_element, depth = queue.popleft()
-            if max_depth is not None and depth > max_depth:
-                continue
+            elements_processed += 1
+            
+            # NO depth limit check - search entire sidebar tree
             
             try:
                 # Get various text properties
@@ -548,4 +553,4 @@ class WindowsPlatformConfig(PlatformConfig):
         self.supports_notifications = False  # Not implemented yet
         self.required_permissions = []  # No special permissions needed
         self.optional_dependencies = ["pywin32", "pyttsx3"]
-        self.sidebar_depth_limit = sidebar_depth_limit  # Configurable depth limit for sidebar traversal 
+        self.sidebar_depth_limit = sidebar_depth_limit  # DEPRECATED - no longer used, sidebar searches are unlimited 

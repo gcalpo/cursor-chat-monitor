@@ -80,7 +80,8 @@ def get_default_config() -> Dict[str, Any]:
         # Maximum depth to search in accessibility tree
         "MAX_SEARCH_DEPTH": 50,
         
-        # Maximum depth to search within chat sidebar (Windows optimization)
+        # Maximum depth to search within chat sidebar (DEPRECATED - no longer used)
+        # Sidebar searches now traverse the entire tree without depth limits
         "SIDEBAR_DEPTH_LIMIT": 20,
         
         # Voice alert settings (platform-specific defaults)

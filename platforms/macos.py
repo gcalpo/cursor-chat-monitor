@@ -314,21 +314,23 @@ class MacOSWindowElement(WindowElement):
         return None
     
     def _extract_text_from_chat_sidebar(self, sidebar_element, texts, max_depth):
-        """Extract all text from the chat sidebar and its descendants with depth limit."""
+        """Extract all text from the chat sidebar and its descendants with NO depth limit.
+        
+        Note: max_depth parameter is kept for compatibility but is ignored when searching within the sidebar.
+        """
         from collections import deque
         
         seen_texts = set()  # Track seen texts to avoid duplicates
         queue = deque([(sidebar_element, 0)])
         elements_processed = 0
         
-        self.logger.debug(f"Extracting text from chat sidebar with max_depth={max_depth}")
+        self.logger.debug(f"Extracting text from chat sidebar with NO depth limit")
         
-        while queue and elements_processed < 1000:  # Limit processing for performance
+        while queue and elements_processed < 10000:  # Safety limit to prevent infinite loops
             current_element, depth = queue.popleft()
             elements_processed += 1
             
-            if max_depth is not None and depth > max_depth:
-                continue
+            # NO depth limit check - search entire sidebar tree
             
             try:
                 # Extract text from various attributes with priority order
