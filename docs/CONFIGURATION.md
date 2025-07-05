@@ -56,6 +56,7 @@ New-Item -Path "$env:USERPROFILE\.cursor_chat_monitor" -ItemType File
 
   "ANNOUNCE_GENERATING_STARTED": true,
   "GENERATING_STARTED_DEBOUNCE_SECONDS": 10,
+  "GENERATING_COMPLETE_DEBOUNCE_SECONDS": 5,
 
   "MONITOR_LOG_FILE": "cursor_resume_monitor.log",
   "LOG_TO_FILE": false,
@@ -214,6 +215,13 @@ New-Item -Path "$env:USERPROFILE\.cursor_chat_monitor" -ItemType File
 - **Range**: `5` - `60`
 - **Description**: Minimum time between "generation started" alerts for the same window
 
+#### `GENERATING_COMPLETE_DEBOUNCE_SECONDS`
+
+- **Type**: Integer (seconds)
+- **Default**: `5`
+- **Range**: `0` - `30`
+- **Description**: Delay before playing "generation complete" alerts. If generation resumes within this time, the completion alert is cancelled. This prevents multiple alerts during long thinking tasks with subtasks. Set to `0` to disable debouncing.
+
 ### Logging Configuration
 
 #### `MONITOR_LOG_FILE`
@@ -264,7 +272,8 @@ The configuration system now supports platform-specific defaults using `"PLATFOR
   "WINDOW_TITLE_ANNOUNCE_MODE": "last",
   "REPLACE_PERIODS_IN_ANNOUNCEMENT": true,
   "ANNOUNCE_GENERATING_STARTED": true,
-  "GENERATING_STARTED_DEBOUNCE_SECONDS": 10
+  "GENERATING_STARTED_DEBOUNCE_SECONDS": 10,
+  "GENERATING_COMPLETE_DEBOUNCE_SECONDS": 5
 }
 ```
 

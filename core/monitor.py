@@ -50,6 +50,10 @@ class CrossPlatformMonitor:
         # Debounce tracking: { (window_id, gen_text): last_alert_time }
         self.generating_started_last_alert = {}
         
+        # Completion debounce tracking: { (window_id, gen_text): completion_time }
+        # Used to delay completion alerts and cancel them if generation resumes
+        self.generating_completion_pending = {}
+        
         # Target texts from config
         self.awaiting_user_action_texts = config.get("AWAITING_USER_ACTION_TEXTS", [])
         self.generating_texts = config.get("GENERATING_TEXTS", [])
@@ -270,6 +274,38 @@ class CrossPlatformMonitor:
         
         self.alert_system.play_audio_alert(message, voice_config)
     
+    def check_and_trigger_pending_completion_alerts(self) -> int:
+        """Check for pending completion alerts that should now be triggered.
+        Returns the number of alerts triggered."""
+        alerts_triggered = 0
+        now = time.time()
+        debounce_seconds = self.config.get("GENERATING_COMPLETE_DEBOUNCE_SECONDS", 5)
+        
+        # Check which pending completions should be triggered
+        to_trigger = []
+        for (window_id, gen_text), completion_time in self.generating_completion_pending.items():
+            if (now - completion_time) >= debounce_seconds:
+                to_trigger.append((window_id, gen_text, completion_time))
+        
+        # Trigger the alerts and remove from pending
+        for window_id, gen_text, completion_time in to_trigger:
+            # Get window title (this is a bit hacky, but we need it for the alert)
+            # Try to find the window by ID, fall back to using ID as title
+            window_title = window_id.split('_', 2)[-1] if '_' in window_id else window_id
+            
+            self.play_generating_complete_alert(window_title, gen_text)
+            print(f"🚨 ALERT: '{gen_text}' complete!")
+            print(f"   Window: {window_title}")
+            print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+            print(f"   Debounced for: {now - completion_time:.1f}s")
+            print("-" * 40)
+            alerts_triggered += 1
+            
+            # Remove from pending
+            del self.generating_completion_pending[(window_id, gen_text)]
+        
+        return alerts_triggered
+    
     def run_monitoring(self) -> None:
         """Run the main cross-platform monitoring loop"""
         platform_name = get_current_platform()
@@ -338,22 +374,44 @@ class CrossPlatformMonitor:
                     prev_gen_counts = self.window_generating_counts.get(window_id, {})
                     for gen_text, new_count in gen_counts.items():
                         prev_count = prev_gen_counts.get(gen_text, None)
+                        debounce_key = (window_id, gen_text)
+                        
                         if prev_count is not None:
                             # Generation completed (count went from >0 to 0)
                             if prev_count > 0 and new_count == 0:
-                                self.play_generating_complete_alert(window.get_title(), gen_text)
-                                print(f"🚨 ALERT: '{gen_text}' complete!")
-                                print(f"   Window: {window.get_title()}")
-                                print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
-                                print("-" * 40)
-                                alerts_triggered += 1
+                                # Use completion debouncing - schedule alert instead of playing immediately
+                                completion_debounce_seconds = self.config.get("GENERATING_COMPLETE_DEBOUNCE_SECONDS", 5)
+                                if completion_debounce_seconds > 0:
+                                    # Schedule the completion alert
+                                    self.generating_completion_pending[debounce_key] = time.time()
+                                    print(f"🕐 SCHEDULED: '{gen_text}' completion scheduled (debouncing {completion_debounce_seconds}s)")
+                                    print(f"   Window: {window.get_title()}")
+                                    print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+                                    print("-" * 40)
+                                else:
+                                    # No debouncing - play immediately
+                                    self.play_generating_complete_alert(window.get_title(), gen_text)
+                                    print(f"🚨 ALERT: '{gen_text}' complete!")
+                                    print(f"   Window: {window.get_title()}")
+                                    print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+                                    print("-" * 40)
+                                    alerts_triggered += 1
                             
                             # Generation started (count went from 0 to >0)
                             elif (self.config.get("ANNOUNCE_GENERATING_STARTED", True) and 
                                   prev_count == 0 and new_count > 0):
                                 
-                                # Debounce logic
-                                debounce_key = (window_id, gen_text)
+                                # Cancel any pending completion alert for this same generation
+                                if debounce_key in self.generating_completion_pending:
+                                    pending_time = self.generating_completion_pending[debounce_key]
+                                    elapsed = time.time() - pending_time
+                                    del self.generating_completion_pending[debounce_key]
+                                    print(f"⏹️  CANCELLED: '{gen_text}' completion alert cancelled (task resumed after {elapsed:.1f}s)")
+                                    print(f"   Window: {window.get_title()}")
+                                    print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+                                    print("-" * 40)
+                                
+                                # Debounce logic for start alerts
                                 now = time.time()
                                 last_alert = self.generating_started_last_alert.get(debounce_key, 0)
                                 debounce_seconds = self.config.get("GENERATING_STARTED_DEBOUNCE_SECONDS", 10)
@@ -369,8 +427,17 @@ class CrossPlatformMonitor:
                         else:
                             # First time seeing this window - alert if generating text found and enabled
                             if (self.config.get("ANNOUNCE_GENERATING_STARTED", True) and new_count > 0):
+                                # Cancel any pending completion alert for this same generation (edge case)
+                                if debounce_key in self.generating_completion_pending:
+                                    pending_time = self.generating_completion_pending[debounce_key]
+                                    elapsed = time.time() - pending_time
+                                    del self.generating_completion_pending[debounce_key]
+                                    print(f"⏹️  CANCELLED: '{gen_text}' completion alert cancelled (task found on new window after {elapsed:.1f}s)")
+                                    print(f"   Window: {window.get_title()}")
+                                    print(f"   Time: {datetime.now().strftime('%H:%M:%S')}")
+                                    print("-" * 40)
+                                
                                 # Debounce logic for first scan too
-                                debounce_key = (window_id, gen_text)
                                 now = time.time()
                                 last_alert = self.generating_started_last_alert.get(debounce_key, 0)
                                 debounce_seconds = self.config.get("GENERATING_STARTED_DEBOUNCE_SECONDS", 10)
@@ -418,6 +485,10 @@ class CrossPlatformMonitor:
                 # Update stored counts
                 self.window_text_counts.update(current_scan_counts)
                 self.window_generating_counts.update(current_generating_counts)
+                
+                # Check for pending completion alerts that should now be triggered
+                pending_alerts_triggered = self.check_and_trigger_pending_completion_alerts()
+                alerts_triggered += pending_alerts_triggered
                 
                 # End timing the complete scan
                 scan_end_time = time.time()

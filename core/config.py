@@ -103,6 +103,11 @@ def get_default_config() -> Dict[str, Any]:
         # Debounce time for 'generating started' alert (seconds). 0 disables debouncing.
         "GENERATING_STARTED_DEBOUNCE_SECONDS": 10,
         
+        # Debounce time for 'generating complete' alert (seconds). 
+        # If generation resumes within this time, completion alert is suppressed.
+        # This prevents multiple alerts during long thinking tasks with subtasks.
+        "GENERATING_COMPLETE_DEBOUNCE_SECONDS": 5,
+        
         # Log file names
         "MONITOR_LOG_FILE": "cursor_resume_monitor.log",
         
