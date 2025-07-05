@@ -29,6 +29,7 @@ A mature, production-ready cross-platform tool for monitoring Cursor IDE convers
 #### Download and Install
 
 1. **Choose your platform** and download the appropriate precompiled binary:
+
    - **[📱 macOS Binary](docs/platforms/macos.md#option-1-standalone-executable-recommended)** - Universal binary (Intel + Apple Silicon)
    - **[🪟 Windows Binary](docs/platforms/windows.md#option-1-standalone-executable-recommended)** - Windows 10+ compatible
    - **[🐧 Linux Binary](docs/platforms/linux.md#option-1-standalone-executable-recommended)** - Most distributions supported
@@ -58,6 +59,7 @@ Each platform provides native service integration:
 - **Linux**: systemd with `systemctl --user start/stop cursor-chat-monitor`
 
 **💡 Benefits of precompiled binaries:**
+
 - ✅ **No Python installation required**
 - ✅ **Native service integration** for each platform
 - ✅ **One-click installation** with automated setup
@@ -85,6 +87,10 @@ run.bat
 python3 run.py --debug --interval-ms=2000
 ./run.sh --platform-info
 run.bat --config=my_config.json
+
+# Debug mode is automatically enabled when running from source
+# Use --no-debug to disable auto-detection if needed
+python3 run.py --no-debug
 ```
 
 #### Manual Usage (Advanced)
@@ -101,6 +107,10 @@ python3 cursor_chat_monitor.py --daemon
 
 # Use custom configuration
 python3 cursor_chat_monitor.py --config=my_config.json --debug
+
+# Debug mode is automatically enabled when running from source
+# Use --no-debug to disable if needed
+python3 cursor_chat_monitor.py --no-debug
 ```
 
 **💡 For Windows Users:** If you don't have Python installed, the [Windows Guide](docs/platforms/windows.md) includes comprehensive Python 3 installation instructions with troubleshooting steps.
@@ -178,16 +188,17 @@ The monitor supports comprehensive JSON configuration with intelligent priority 
 ```
 
 **Platform Defaults Applied:**
+
 - **Windows**: `"Microsoft David Desktop"` voice at `175` WPM
-- **macOS**: `"Daniel"` voice at `175` WPM  
+- **macOS**: `"Daniel"` voice at `175` WPM
 - **Linux**: `"default"` voice at `175` WPM
 
 **Custom Configuration:**
 
 ```json
 {
-  "VOICE_NAME": "Microsoft Zira Desktop",  // Override platform default
-  "SPEECH_RATE": 200,                      // Override platform default
+  "VOICE_NAME": "Microsoft Zira Desktop", // Override platform default
+  "SPEECH_RATE": 200, // Override platform default
   "DEFAULT_SCAN_INTERVAL_MS": 1000,
   "MAX_SEARCH_DEPTH": 25
 }
@@ -208,6 +219,7 @@ See the [Configuration Guide](docs/CONFIGURATION.md) for complete details and pl
 - **📦 Self-contained** - All dependencies bundled (~50MB per platform)
 
 **Download and installation guides:**
+
 - **[macOS Binary Installation](docs/platforms/macos.md#option-1-standalone-executable-recommended)**
 - **[Windows Binary Installation](docs/platforms/windows.md#option-1-standalone-executable-recommended)**
 - **[Linux Binary Installation](docs/platforms/linux.md#option-1-standalone-executable-recommended)**

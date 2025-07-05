@@ -117,32 +117,48 @@ class CrossPlatformMonitor:
             # Count occurrences for both text sets (case-insensitive)
             for text_element in all_text_elements:
                 text_lower = text_element.lower()
+                text_stripped = text_element.strip().lower()
                 
                 # Check awaiting user action texts
                 for target_text in awaiting_texts:
                     if target_text.lower() in text_lower:
                         awaiting_counts[target_text] += 1
                 
-                # Check generating texts
+                # Check generating texts - only count if the text is exactly the generating text (after trimming)
                 for target_text in generating_texts:
-                    if target_text.lower() in text_lower:
+                    if target_text.lower() == text_stripped:
                         generating_counts[target_text] += 1
+                        # Debug: Show what text element matched
+                        if self.debug:
+                            print(f"🔍 DEBUG: Found exact match for '{target_text}' in element: '{text_element}' (stripped: '{text_stripped}')")
             
         except Exception as e:
             self.logger.error(f"Error counting texts in window '{window.get_title()}': {e}")
         
-        return counts
+        return awaiting_counts, generating_counts
 
     def count_texts_in_extracted_content(self, all_text_elements: List[str], target_texts: List[str]) -> Dict[str, int]:
-        """Count occurrences of target texts in already extracted text content."""
+        """Count occurrences of target texts in already extracted text content.
+        For generating texts, only count exact matches (after trimming whitespace).
+        """
         counts = {text: 0 for text in target_texts}
         
         # Count occurrences (case-insensitive)
         for text_element in all_text_elements:
             text_lower = text_element.lower()
+            text_stripped = text_element.strip().lower()
             for target_text in target_texts:
-                if target_text.lower() in text_lower:
-                    counts[target_text] += 1
+                # Check if this is a generating text (exact match required)
+                if target_text in self.generating_texts:
+                    if target_text.lower() == text_stripped:
+                        counts[target_text] += 1
+                        # Debug: Show what text element matched
+                        if self.debug:
+                            print(f"🔍 DEBUG: Found exact match for '{target_text}' in element: '{text_element}' (stripped: '{text_stripped}')")
+                else:
+                    # For non-generating texts, use substring matching
+                    if target_text.lower() in text_lower:
+                        counts[target_text] += 1
         
         return counts
 

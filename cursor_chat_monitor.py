@@ -25,6 +25,32 @@ from platforms import get_current_platform
 # Global monitor instance for signal handling
 monitor_instance = None
 
+def is_running_from_source():
+    """
+    Detect if we're running from source code vs compiled executable.
+    
+    Returns:
+        bool: True if running from source (.py file), False if compiled executable
+    """
+    # Check if we're frozen (compiled with PyInstaller, cx_Freeze, etc.)
+    if getattr(sys, 'frozen', False):
+        return False
+    
+    # Check if __file__ exists and points to a .py file
+    if hasattr(sys.modules[__name__], '__file__'):
+        script_path = sys.modules[__name__].__file__
+        if script_path and script_path.endswith('.py'):
+            return True
+    
+    # Check if sys.executable points to a Python interpreter
+    if sys.executable:
+        exe_name = os.path.basename(sys.executable).lower()
+        if exe_name.startswith('python') or exe_name.startswith('python3'):
+            return True
+    
+    # Default to False (assume compiled) for safety
+    return False
+
 def signal_handler(signum, frame):
     """Handle termination signals gracefully"""
     global monitor_instance
@@ -82,6 +108,11 @@ Examples:
         help="Enable debug mode to show extracted text"
     )
     parser.add_argument(
+        "--no-debug", 
+        action="store_true", 
+        help="Explicitly disable debug mode (overrides auto-detection)"
+    )
+    parser.add_argument(
         "--config", 
         type=str, 
         help="Path to JSON configuration file (default: looks for ~/.cursor_chat_monitor)"
@@ -126,6 +157,10 @@ Examples:
         print(f"🖥️  Current Platform: {get_current_platform()}")
         print(f"🐍 Python Version: {sys.version}")
         print(f"📁 Python Executable: {sys.executable}")
+        
+        # Show execution mode
+        from_source = is_running_from_source()
+        print(f"🚀 Execution Mode: {'Source Code' if from_source else 'Compiled Executable'}")
         
         # Try to get platform implementations to show capabilities
         try:
@@ -254,12 +289,40 @@ Examples:
         print("❌ Configuration validation failed")
         return 1
     
+    # Determine debug mode based on execution context and arguments
+    debug_mode = None
+    if args.no_debug:
+        # Explicitly disabled
+        debug_mode = False
+        debug_reason = "explicitly disabled with --no-debug"
+    elif args.debug:
+        # Explicitly enabled
+        debug_mode = True
+        debug_reason = "explicitly enabled with --debug"
+    else:
+        # Auto-detect based on execution context
+        from_source = is_running_from_source()
+        debug_mode = from_source
+        debug_reason = f"auto-detected ({'source code' if from_source else 'compiled executable'})"
+    
+    # Override config default if we determined debug mode
+    if debug_mode is not None:
+        config["DEFAULT_DEBUG_MODE"] = debug_mode
+    
+    # Show debug mode status (only if not in daemon mode)
+    if not args.daemon:
+        print(f"🐛 Debug mode: {'ON' if debug_mode else 'OFF'} ({debug_reason})")
+        if debug_mode:
+            print("   💡 Use --no-debug to disable debug mode")
+        else:
+            print("   💡 Use --debug to enable debug mode")
+    
     # Create monitor
     try:
         monitor_instance = CrossPlatformMonitor(
             config=config,
             interval_ms=args.interval_ms,
-            debug=args.debug,
+            debug=debug_mode,
             daemon_mode=args.daemon
         )
     except Exception as e:
